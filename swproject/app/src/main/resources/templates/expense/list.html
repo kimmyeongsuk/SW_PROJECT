@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>지출 예측 가계부 - 기록 목록</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+
+<h1>지출 / 수입 기록</h1>
+
+<a class="btn" th:href="@{/expenses/new}">+ 새 기록 추가</a>
+
+<table>
+    <thead>
+    <tr>
+        <th>날짜</th>
+        <th>구분</th>
+        <th>카테고리</th>
+        <th>금액</th>
+        <th>메모</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- th:each 로 expenses 리스트 개수만큼 <tr> 이 자동 반복됩니다 -->
+    <tr th:each="expense : ${expenses}">
+        <td th:text="${expense.expenseDate}">2026-01-01</td>
+        <td>
+            <span th:if="${expense.type.name() == 'EXPENSE'}" class="expense">지출</span>
+            <span th:if="${expense.type.name() == 'INCOME'}" class="income">수입</span>
+        </td>
+        <td th:text="${expense.category}">카테고리</td>
+        <td th:text="${#numbers.formatInteger(expense.amount, 0, 'COMMA')} + '원'">0원</td>
+        <td th:text="${expense.memo}">메모</td>
+        <td class="actions">
+            <a th:href="@{/expenses/{id}/edit(id=${expense.id})}">수정</a>
+            <form th:action="@{/expenses/{id}/delete(id=${expense.id})}" method="post" style="display:inline;">
+                <button type="submit" onclick="return confirm('삭제하시겠습니까?');">삭제</button>
+            </form>
+        </td>
+    </tr>
+    <tr th:if="${#lists.isEmpty(expenses)}">
+        <td colspan="6" style="color:#6B6456;">아직 등록된 기록이 없습니다.</td>
+    </tr>
+    </tbody>
+</table>
+
+</body>
+</html>
