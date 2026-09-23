@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>지출 분석</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        .chart-header { display: flex; justify-content: space-between; align-items: center; max-width: 800px; margin-bottom: 18px; }
+        .month-nav { display: flex; align-items: center; gap: 14px; font-size: 14px; }
+        .month-nav a { color: #6B9080; text-decoration: none; font-weight: 600; }
+        .stat-row { display: flex; gap: 30px; margin-bottom: 24px; }
+        .stat-box { background: #FFFFFF; border: 1px solid #EDE7D8; border-radius: 14px; padding: 16px 22px; }
+        .stat-box .label { font-size: 12px; color: #9C9584; margin-bottom: 6px; }
+        .stat-box .value { font-size: 22px; font-weight: 700; color: #3A3A32; }
+        .chart-box { background: #FFFFFF; border: 1px solid #EDE7D8; border-radius: 18px; padding: 24px; max-width: 800px; }
+    </style>
+</head>
+<body>
+
+<h1>지출 분석</h1>
+<a class="btn" th:href="@{/}">← 홈으로</a>
+
+<div class="chart-header">
+    <div class="month-nav">
+        <a th:href="@{/expenses/chart(month=${chart.prevMonth()})}">‹ 이전 달</a>
+        <strong th:text="${chart.monthLabel()}">2026년 9월</strong>
+        <a th:href="@{/expenses/chart(month=${chart.nextMonth()})}">다음 달 ›</a>
+    </div>
+</div>
+
+<div class="stat-row">
+    <div class="stat-box">
+        <div class="label">이번 달 총 지출</div>
+        <div class="value" th:text="${#numbers.formatInteger(chart.total(), 0, 'COMMA')} + '원'">0원</div>
+    </div>
+    <div class="stat-box">
+        <div class="label">하루 평균 지출</div>
+        <div class="value" th:text="${#numbers.formatInteger(chart.average(), 0, 'COMMA')} + '원'">0원</div>
+    </div>
+</div>
+
+<div class="chart-box">
+    <canvas id="dailyChart" height="90"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/       <!-- 안에 특수문자 있어도 그냥 순수텍스트로 취급함 -->
+    const days = /*[[${chart.days()}]]*/ []; < !-- 서버가 렌더링할때, /*[]*/ 부분이 실제 데이터로 통째로 바뀜-->
+    const amounts = /*[[${chart.amounts()}]]*/ [];  <!-- -->
+    const average = /*[[${chart.average()}]]*/ 0;
+    /*]]>*/
+
+    const ctx = document.getElementById('dailyChart');
+
+    new Chart(ctx, {
+      data: {
+        labels: days,
+        datasets: [
+          {
+            type: 'bar',
+            label: '일별 지출',
+            data: amounts,
+            backgroundColor: amounts.map(a => a > average ? '#F0805E' : '#B7D0C1'),
+            borderRadius: 4,
+          },
+          {
+            type: 'line',
+            label: '평균',
+            data: days.map(() => average),
+            borderColor: '#3A3A32',
+            borderDash: [6, 4],
+            borderWidth: 1.5,
+            pointRadius: 0,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (item) => item.dataset.label + ': ' + item.formattedValue + '원'
+            }
+          }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: (v) => v.toLocaleString() + '원' } }
+        }
+      }
+    });
+</script>
+
+</body>
+</html>
