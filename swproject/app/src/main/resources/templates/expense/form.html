@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>지출/수입 기록</title>
+  <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+
+  <h1 th:text="${expense.id} != null ? '기록 수정' : '새 기록 추가'">기록</h1>
+
+  <form th:action="${expense.id} != null ? @{/expenses/{id}(id=${expense.id})} : @{/expenses}"
+        th:object="${expense}" method="post">
+
+    <label for="expenseDate">날짜</label>
+    <input type="date" id="expenseDate" th:field="*{expenseDate}">
+    <div class="error" th:if="${#fields.hasErrors('expenseDate')}" th:errors="*{expenseDate}"></div>
+
+    <label for="type">구분</label>
+    <select id="type" th:field="*{type}">
+
+      <option th:each="t : ${types}" th:value="${t}"
+              th:text="${t.name() == 'EXPENSE'} ? '지출' : '수입'"></option>
+    </select>
+
+    <label for="category">카테고리</label>
+    <input type="text" id="category" th:field="*{category}" placeholder="예: 식비, 교통, 구독료">
+    <div class="error" th:if="${#fields.hasErrors('category')}" th:errors="*{category}"></div>
+
+    <label for="amount">금액</label>
+    <input type="number" id="amount" th:field="*{amount}" placeholder="예: 12000">
+    <div class="error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></div>
+
+    <label for="memo">메모 (선택)</label>
+    <input type="text" id="memo" th:field="*{memo}" placeholder="예: 친구랑 점심">
+
+    <button type="submit" class="btn" style="margin-top:20px;">저장</button>
+    <a th:href="@{/expenses}" style="margin-left:10px; font-size:13px; color:#6B6456;">취소</a>
+  </form>
+
+</body>
+</html>
