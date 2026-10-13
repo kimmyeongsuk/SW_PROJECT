@@ -8,6 +8,7 @@ public record DailyChartDto (
         List<Long> amounts,
         long total,
         long average,
+        int startOffset,
         String prevMonth,
         String nextMonth
 ){}

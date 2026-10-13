@@ -8,6 +8,7 @@
 <body>
 
   <h1 th:text="${expense.id} != null ? '기록 수정' : '새 기록 추가'">기록</h1>
+  <a class="btn" th:href="@{/}">← 홈으로</a>
 
   <form th:action="${expense.id} != null ? @{/expenses/{id}(id=${expense.id})} : @{/expenses}"
         th:object="${expense}" method="post">
@@ -35,6 +36,7 @@
     <input type="text" id="memo" th:field="*{memo}" placeholder="예: 친구랑 점심">
 
     <button type="submit" class="btn" style="margin-top:20px;">저장</button>
+
     <a th:href="@{/expenses}" style="margin-left:10px; font-size:13px; color:#6B6456;">취소</a>
   </form>
 

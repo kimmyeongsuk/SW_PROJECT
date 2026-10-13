@@ -24,6 +24,7 @@ import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
@@ -33,6 +34,16 @@ import java.util.List;
 public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
+
+    private static final Map<String, List<String>> CATEGORY_KEYWORDS = new LinkedHashMap<>() {{
+        put("식비", List.of("김밥", "국밥", "식당", "분식", "맥도날드", "버거", "배달의민족", "요기요", "쿠팡이츠", "스타벅스", "카페", "커피", "이디야", "투썸"));
+        put("교통", List.of("교통비","지하철", "버스", "택시", "카카오T", "교통카드", "주유", "주차"));
+        put("쇼핑", List.of("쿠팡", "올리브영", "다이소", "마트", "이마트", "홈플러스", "무신사", "지마켓"));
+        put("구독", List.of("넷플릭스", "유튜브", "왓챠", "멜론", "지니뮤직", "디즈니", "티빙", "웨이브", "클라우드","통신비", "SKT", "KT", "LG U+", "알뜰폰"));
+        put("문화/여가", List.of("영화관", "CGV", "롯데시네마", "메가박스", "공연", "전시"));
+        put("의료/건강", List.of("약국", "병원", "의원", "한의원"));
+    }};
+
 
     //전체 목록 조회 (최신 날짜 순)
     @Transactional(readOnly = true) //읽기정용 트랜잭션
@@ -169,7 +180,8 @@ public class ExpenseService {
         String prevMonth = month.minusMonths(1).toString();
         String nextMonth = month.plusMonths(1).toString();
 
-        return new DailyChartDto(monthLabel, days, amounts, total, average, prevMonth, nextMonth);
+        int startOffset = month.atDay(1).getDayOfWeek().getValue();
+        return new DailyChartDto(monthLabel, days, amounts, total, average, startOffset, prevMonth, nextMonth);
     }
 
     // 은행 명세서(CSV)를 업로드해서 지출/수입 기록을 일괄 등록
@@ -187,8 +199,8 @@ public class ExpenseService {
 
         try (var reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
              CSVParser parser = CSVFormat.DEFAULT.builder()
-                     .setHeader()               // 첫 줄을 컬럼명으로 인식
-                     .setSkipHeaderRecord(true) // 첫 줄은 데이터로 취급하지 않음
+                     .setHeader()               //첫 줄을 컬럼명으로 인식
+                     .setSkipHeaderRecord(true) //첫 줄은 데이터로 취급하지 않음
                      .setIgnoreHeaderCase(true)
                      .setTrim(true)
                      .build()
@@ -236,7 +248,7 @@ public class ExpenseService {
         expense.setExpenseDate(date);
         expense.setAmount(amount);
         expense.setType(type);
-        expense.setCategory("미분류"); // 카테고리는 명세서에 없으므로 일단 미분류로 등록, 나중에 직접 수정
+        expense.setCategory(inferCategory(desc)); // 적요 기반으로 카테고리 자동 추정, 실패시 "미분류"
         expense.setMemo(desc);
         expenseRepository.save(expense);
         return 1;
@@ -278,5 +290,27 @@ public class ExpenseService {
             }
         }
         return null;
+    }
+
+    private String inferCategory(String description){
+        if (description == null || description.isBlank()) return "미분류";
+        for (Map.Entry<String, List<String>> entry : CATEGORY_KEYWORDS.entrySet()) {
+            for (String keyword : entry.getValue()) {
+                if (description.contains(keyword)) {
+                    return entry.getKey();
+                }
+            }
+        }
+        return "미분류";
+    }
+
+    @Transactional
+    public List<Expense> findByCategory(String category) {
+        return expenseRepository.findByCategory(category);
+    }
+
+    @Transactional
+    public void saveAll(List<Expense> expenses) {
+        expenseRepository.saveAll(expenses);
     }
 }

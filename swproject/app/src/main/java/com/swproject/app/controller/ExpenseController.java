@@ -1,5 +1,6 @@
 package com.swproject.app.controller;
 
+import com.swproject.app.service.AiCatagotyService;
 import com.swproject.app.entity.Expense;
 import com.swproject.app.entity.ExpenseType;
 import com.swproject.app.service.ExpenseService;
@@ -13,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.YearMonth;
+import java.util.List;
 
 @Controller                 // Spring이 이 클래스를 관리 대상으로 등록, 연결해줌
 @RequestMapping("/expenses")
@@ -20,6 +22,7 @@ import java.time.YearMonth;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+    private final AiCatagotyService aiCategoryService;
 
     // 목록 화면
     @GetMapping     // /expense 요청 처리
@@ -125,5 +128,27 @@ public class ExpenseController {
             model.addAttribute("error", e.getMessage());
         }
         return "expense/upload";
+    }
+
+    // "미분류" 상태인 항목들을 AI로 일괄 재분류: POST /expenses/ai-categorize
+    @PostMapping("/ai-categorize")
+    public String aiCategorize() {
+        List<Expense> uncategorized = expenseService.findByCategory("미분류");
+        if (uncategorized.isEmpty()) {
+            return "redirect:/expenses";
+        }
+
+        List<String> descriptions = uncategorized.stream()
+                .map(Expense::getMemo)
+                .toList();
+
+        List<String> categories = aiCategoryService.classifyBatch(descriptions);
+
+        for (int i = 0; i < uncategorized.size(); i++) {
+            uncategorized.get(i).setCategory(categories.get(i));
+        }
+        expenseService.saveAll(uncategorized);
+
+        return "redirect:/expenses";
     }
 }

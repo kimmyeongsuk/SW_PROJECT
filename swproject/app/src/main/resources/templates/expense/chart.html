@@ -12,7 +12,37 @@
         .stat-box { background: #FFFFFF; border: 1px solid #EDE7D8; border-radius: 14px; padding: 16px 22px; }
         .stat-box .label { font-size: 12px; color: #9C9584; margin-bottom: 6px; }
         .stat-box .value { font-size: 22px; font-weight: 700; color: #3A3A32; }
-        .chart-box { background: #FFFFFF; border: 1px solid #EDE7D8; border-radius: 18px; padding: 24px; max-width: 800px; }
+
+        /* ---------- 캘린더 ---------- */
+        .calendar { background: #FFFFFF; border: 1px solid #EDE7D8; border-radius: 18px; padding: 20px; max-width: 800px; }
+
+        /* 7칸짜리 격자. 칸이 7개를 넘으면 자동으로 다음 줄로 넘어가서 "주" 단위가 만들어짐 */
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+
+        .cal-head { text-align: center; font-size: 12px; color: #9C9584; padding-bottom: 6px; }
+        .cal-head.sun { color: #F0805E; }
+
+        .cal-cell {
+            min-height: 78px;
+            border: 1px solid #F4F0E4;
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: #FBFAF5;
+        }
+        .cal-cell .d { font-size: 12px; color: #6B6456; }
+        .cal-cell .amt { font-size: 12px; font-weight: 700; color: #3A3A32; text-align: right; }
+
+        .cal-cell.has  { background: #EAF2EA; border-color: #D5E4D8; }   /* 지출 있는 날 */
+        .cal-cell.high { background: #FCE9E2; border-color: #F6CDBF; }   /* 평균보다 많이 쓴 날 */
+        .cal-cell.high .amt { color: #D9603B; }
+
+        .legend { display: flex; gap: 16px; margin-top: 14px; font-size: 12px; color: #9C9584; }
+        .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+        .legend .l-has::before  { background: #EAF2EA; border: 1px solid #D5E4D8; }
+        .legend .l-high::before { background: #FCE9E2; border: 1px solid #F6CDBF; }
     </style>
 </head>
 <body>
@@ -23,14 +53,14 @@
 <div class="chart-header">
     <div class="month-nav">
         <a th:href="@{/expenses/chart(month=${chart.prevMonth()})}">‹ 이전 달</a>
-        <strong th:text="${chart.monthLabel()}">2026년 9월</strong>
+        <strong th:text="${chart.monthLabel()}">2026년 10월</strong>
         <a th:href="@{/expenses/chart(month=${chart.nextMonth()})}">다음 달 ›</a>
     </div>
 </div>
 
 <div class="stat-row">
     <div class="stat-box">
-        <div class="label">이번 달 총 지출</div>
+        <div class="label">총 지출</div>
         <div class="value" th:text="${#numbers.formatInteger(chart.total(), 0, 'COMMA')} + '원'">0원</div>
     </div>
     <div class="stat-box">
@@ -39,8 +69,39 @@
     </div>
 </div>
 
-<div class="chart-box">
-    <canvas id="dailyChart" height="90"></canvas>
+<div class="calendar">
+    <div class="cal-grid">
+
+        <!-- 요일 헤더 -->
+        <div class="cal-head sun">일</div>
+        <div class="cal-head">월</div>
+        <div class="cal-head">화</div>
+        <div class="cal-head">수</div>
+        <div class="cal-head">목</div>
+        <div class="cal-head">금</div>
+        <div class="cal-head">토</div>
+
+        <!-- 날짜 칸: 1일부터 말일까지 하루에 한 칸씩 만들어짐 -->
+        <!-- th:with : 그날의 지출액을 amt 라는 이름으로 잠깐 저장해두고 아래에서 재사용 -->
+        <div th:each="day, stat : ${chart.days()}"
+             th:with="amt=${chart.amounts().get(stat.index)}"
+             class="cal-cell"
+             th:classappend="${amt > chart.average()} ? 'high' : (${amt > 0} ? 'has' : '')"
+             th:style="${day == 1} ? ('grid-column-start:' + ${chart.startOffset() + 1}) : ''">
+
+            <div class="d" th:text="${day}">1</div>
+
+            <!-- 지출이 있는 날만 금액 표시 -->
+            <div class="amt" th:if="${amt > 0}"
+                 th:text="${#numbers.formatInteger(amt, 0, 'COMMA')}">0</div>
+        </div>
+
+    </div>
+
+    <div class="legend">
+        <span class="l-has">지출 있음</span>
+        <span class="l-high">평균 초과</span>
+    </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>

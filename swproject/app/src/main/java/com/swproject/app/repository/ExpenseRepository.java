@@ -22,6 +22,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     //최근 지출/수입 데이터 5개만 추출
     List<Expense> findTop5ByOrderByExpenseDateDescCreatedAtDesc();
 
+
+    List<Expense> findByCategory(String category);
     //이번 달 수입/지출 합계
     @Query("select coalesce(sum(e.amount), 0) from Expense e " +
             "where e.type = :type and e.expenseDate between :start and :end")

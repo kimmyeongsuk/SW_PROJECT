@@ -9,8 +9,12 @@
 
 <h1>지출 / 수입 기록</h1>
 
+<a class="btn" th:href="@{/}">← 홈으로</a>
 <a class="btn" th:href="@{/expenses/new}">+ 새 기록 추가</a>
 <a class="btn" th:href="@{/expenses/upload}" style="background:#9C9584;">명세서로 가져오기</a>
+<form th:action="@{/expenses/ai-categorize}" method="post" style="display:inline;">
+    <button type="submit" class="btn" style="background:#6B9080;">AI로 미분류 자동 분류</button>
+</form>
 
 <table>
     <thead>
