@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가계부 프로젝트 계획서</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html { scroll-snap-type:y mandatory; scroll-behavior:smooth; }
+
+  section{
+    height:100vh; scroll-snap-align:start;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:8vh 9vw;
+    background:var(--bg); color:var(--fg);
+  }
+
+  .paper{ --bg:#FAF7EF; --fg:#1B2A41; --muted:#6B6456; --line:#E4DECE; --accent:#2F5233; }
+
+  .gray{ font-size:12.5px; color:var(--muted); margin-bottom:16px; }
+  .gray2{ font-size:60px; color:var(--muted); margin-bottom:16px; text-align: center;}
+  
+  h1{ font-size:clamp(32px,4.4vw,58px); line-height:1.15; }
+  h2{ font-size:clamp(26px,3vw,40px); margin-bottom:20px; }
+
+  p{ font-size:15.5px; line-height:1.7; max-width:580px; }
+  
+  .rule{ width:600px; height:2px; background: var(--accent); margin:18px 0; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px 40px; margin-top:10px; max-width:700px; }
+
+  table{ border-collapse:collapse; margin-top:14px; font-family:'IBM Plex Mono',monospace; font-size:13px; width:100%; max-width:560px; }
+  th,td{ text-align:left; padding:10px 0; border-bottom:1px solid var(--line); }
+  th{ font-weight:500; font-size:11px; color:var(--muted); }
+  td.wk{ color:var(--accent); width:60px; }
+
+</style>
+</head>
+<body>
+
+<section id="p1" class="paper">
+  <div class="gray">&nbsp;개인 프로젝트 계획서</div>
+  <h1>지출 예측 가계부</h1>
+  <p style="font-size: 17px; color: var(--muted); margin-top: 10px;">202344042 김명석</p>
+</section>
+
+<section id="p2" class="paper">
+  <div class="gray">기획 배경</div>
+  <h2>무의도적 구독 결제를 방지하고 
+    <br>월 고정 지출을 한눈에 관리·시각화하기 위한 서비스
+    </h2>
+  <div class="rule"> <br> · 무료로 사용하다가 유료 결제로 바뀌어 
+    나도 모르게 유료 구독 서비스가 결제되는 경우 <br>
+    · 과도한 지출이 발생한 경우가 생기는 일을 방지<br>
+    · 매달 나가는 지출을 한 번에 계산,예측하고 한 눈에 알아보기 쉽게 하기 위해 기획
+  </div>
+  <p></p>
+</section>
+
+<section id="p3" class="paper">
+  <div class="gray">문제</div>
+  <h2>기존 가계부의 부족한 기능</h2>
+  <div class="grid">
+    <div ><h3>단순 수입, 지출 기록 중심</h3></div>
+    <div ><h3>패턴이 안 보인다</h3><p>어떤 날 지출이 몰리는지 알기 어렵다</p></div>
+    <div ><h3>고정 지출을 알려주지 않는다</h3><p>각 각의 지출만 보여줘 사용자가 직접 계산해야하는 경우가 발생</p></div>
+  </div>
+</section>
+
+<section id="p4" class="paper">
+  <div class="gray">핵심 기능</div>
+  <h2>네 가지 기능</h2>
+  <table>
+    <tr><th>기능</th><th>설명</th></tr>
+    <tr><td>기본적인 수입 / 지출 기록</td><td>언제 지출을 했는지 수입이 들어 왔는지 보여준다
+    </td></tr>
+    <tr><td>일별 지출 그래프</td><td>지출이 몰리는 날 시각적으로 보여준다</td></tr>
+    <tr><td>정기 구독 관리</td><td>고정 지출을 분류한다</td></tr>
+    <tr><td>예상 지출 계산</td><td>고정 지출(구독료) 등을 한번에 계산하여 예측하는 기능</td></tr>
+  </table>
+  <br>
+  <h3>부가 기능</h3>
+  <table>
+    <tr><th>기능</th><th>설명</th></tr>
+    <tr><td>빠른 입력</td><td>자주 사용하는 카테고리/금액 자동완성 기능</td></tr>
+    <tr><td></td><td>반복 지출 원터치 등록 기능</td></tr>
+    <tr><td>카테고리</td><td>어디에 가장 많이 썼는지 비교한다 </td></tr>
+    <tr><td>모임 정산 </td><td>인원 수별 금액 계산 기능</td></tr>
+  </table>
+</section>
+<section id="s5" class="paper">
+  <div class="gray">기술 스택</div>
+  <h2>Java 기반</h2>
+  <table>
+    <tr><th>구분</th><th>내용</th></tr>
+    <tr><td>Backend</td><td>Java + Spring Boot</td></tr>
+    <tr><td>Database</td><td>MySQL</td></tr>
+    <tr><td>차트</td><td>Chart.js </td></tr>
+  </table>
+</section>
+<section id="s5" class="paper">
+  <div class="gray"></div>
+  <h2>개발 일정</h2>
+  <table>
+    <tr><th>주차</th><th>목표</th></tr>
+    <tr><td class="wk">1~2주</td><td>DB 설계, 기본 CRUD 구현</td></tr>
+    <tr><td class="wk">3~4주</td><td>일별 지출 그래프, 정기구독 관리, 예상 지출 계산</td></tr>
+    <tr><td class="wk">5~6주</td><td>카테고리별 통계, 모임 정산 기능 </td></tr>
+    <tr><td class="wk">7~8주</td><td>빠른 입력 기능, UI 다듬기</td></tr>
+  </table>
+</section>
+<section id="p6" class="paper">
+  <div class="gray2">Q & A</div>
+</section>
+
+</body>
+</html>
