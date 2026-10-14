@@ -94,7 +94,7 @@ p code,li code,td code{ background:#EFE9D8; padding:1px 6px; border-radius:4px; 
 <p>은행 명세서(CSV)에 들어 있는 정보는 날짜, 금액, 적요(가맹점명·거래 내용)뿐이다. 카테고리 정보는 없어서, 처음 만든 CSV 가져오기 기능은 모든 내역을 <code>미분류</code>로 저장했다.</p>
 <div class="callout"><strong>왜 문제인가</strong> — 이 앱의 핵심은 카테고리별 통계와 지출 패턴 분석이다. 가져온 내역이 전부 미분류면 "어디에 가장 많이 썼는지"를 볼 수 없어서, 명세서를 가져오는 의미 자체가 줄어든다.</div>
 </div><nav class="page-nav"><a href="#p1">‹ 이전</a><span class="count"></span><a href="#p3">다음 ›</a></nav></section><section class="page" id="p3"><div class="inner">
-<h2><span class="num">2.</span>1단계 — 키워드 기반 자동 분류</h2>
+<h2><span class="num">1.</span>1단계 — 키워드 기반 자동 분류</h2>
 <p>적요에 특정 단어가 들어 있으면 해당 카테고리로 분류하는 방식을 먼저 적용했다. 카테고리마다 연관 단어 목록을 만들어두고, 적요 문자열이 그 단어를 포함하는지 검사한다.</p>
 <pre><code>private static final Map&lt;String, List&lt;String&gt;&gt; CATEGORY_KEYWORDS = new LinkedHashMap&lt;&gt;() {{
     put(&quot;식비&quot;,   List.of(&quot;김밥&quot;, &quot;국밥&quot;, &quot;스타벅스&quot;, &quot;카페&quot;, &quot;커피&quot;, &quot;쿠팡이츠&quot;, ...));
@@ -120,7 +120,7 @@ p code,li code,td code{ background:#EFE9D8; padding:1px 6px; border-radius:4px; 
 <p>10월 23건에 이 목록을 적용해 계산하면 19건이 분류되고, 급여·편의점·친구모임 정산·교통비 4건이 미분류로 남는다.</p>
 <div class="before-after">
 </div><nav class="page-nav"><a href="#p3">‹ 이전</a><span class="count"></span><a href="#p5">다음 ›</a></nav></section><section class="page" id="p5"><div class="inner">
-<h2><span class="num">3.</span>2단계 — LLM(Claude API)으로 남은 미분류 재분류</h2>
+<h2><span class="num">2.</span>2단계 — LLM(Claude API)으로 남은 미분류 재분류</h2>
 <p> 키워드로도 걸러지지 않은 항목만 AI에게 맡겨서, 문맥으로 카테고리를 추론하게 했다. .</p>
 <h3>처리 흐름</h3>
 <div class="step"><div class="n">1</div><div class="body"><b>버튼 클릭</b>목록 화면의 "AI로 미분류 자동 분류" 버튼이 <code>POST /expenses/ai-categorize</code>를 호출한다.</div></div>
@@ -142,7 +142,7 @@ p code,li code,td code{ background:#EFE9D8; padding:1px 6px; border-radius:4px; 
 2. 교통비</code></pre>
 </div>
 </div><nav class="page-nav"><a href="#p12">‹ 이전</a><span class="count"></span><a href="#p14">다음 ›</a></nav></section><section class="page" id="p14"><div class="inner">
-<h3>8주차</h3>
+<h3>8주차 계획</h3>
 <hr>
 <ul>
   <li>다음 달 예상 지출 분석 방법 구성</li>
