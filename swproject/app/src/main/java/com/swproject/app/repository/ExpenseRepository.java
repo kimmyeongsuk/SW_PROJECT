@@ -51,5 +51,25 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
             "order by e.expenseDate asc")
     List<Object[]> sumAmountByDate(@Param("start") LocalDate start,
                                    @Param("end") LocalDate end);
+
+    //일별 수입 합계
+    @Query("select e.expenseDate, sum(e.amount) " +
+            "from Expense e " +
+            "where e.type = com.swproject.app.entity.ExpenseType.INCOME " +
+            "and e.expenseDate between :start and :end " +
+            "group by e.expenseDate " +
+            "order by e.expenseDate asc")
+    List<Object[]> sumIncomeByDate(@Param("start") LocalDate start,
+                                   @Param("end") LocalDate end);
+
+    // 일별/카테고리별 지출 합계
+    @Query("select e.expenseDate, e.category, sum(e.amount) " +
+            "from Expense e " +
+            "where e.type = com.swproject.app.entity.ExpenseType.EXPENSE " +
+            "and e.expenseDate between :start and :end " +
+            "group by e.expenseDate, e.category " +
+            "order by e.expenseDate asc")
+    List<Object[]> sumAmountByDateAndCategory(@Param("start") LocalDate start,
+                                              @Param("end") LocalDate end);
 }
 

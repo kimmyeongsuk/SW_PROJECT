@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>정기구독 · 고정지출</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        .stat-row { display: flex; gap: 16px; margin: 8px 0 24px; flex-wrap: wrap; }
+        .stat-box { background: #FFFFFF; border: 1px solid #EDE7D8; border-radius: 14px; padding: 16px 22px; min-width: 170px; }
+        .stat-box .label { font-size: 12px; color: #9C9584; margin-bottom: 6px; }
+        .stat-box .value { font-size: 22px; font-weight: 700; color: #3A3A32; }
+        .stat-box .sub { font-size: 11.5px; color: #9C9584; margin-top: 4px; }
+
+        .card { background: #FFFFFF; border: 1px solid #EDE7D8; border-radius: 14px; max-width: 920px; overflow: hidden; }
+        .card table { max-width: none; }
+        .card th { background: #FBFAF5; }
+        .card tr:last-child td { border-bottom: none; }
+
+        .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #EAF2EA; color: #3B5A46; margin-left: 6px; }
+        .memo { display: block; font-size: 12px; color: #9C9584; margin-top: 2px; }
+
+        /* 다음 결제일 D-day. 3일 이내면 코랄색으로 강조 */
+        .dday { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #F0ECDF; color: #6B6456; margin-left: 6px; }
+        .dday.soon { background: #FCE9E2; color: #D9603B; }
+
+        .chip { display: inline-block; font-size: 11.5px; padding: 2px 9px; border-radius: 10px; }
+        .chip.on  { background: #EAF2EA; color: #3B5A46; }
+        .chip.off { background: #EDE7D8; color: #9C9584; }
+
+        /* 해지된 항목은 흐리게 */
+        tr.off td { color: #B5AE9C; }
+        tr.off strong { text-decoration: line-through; }
+        tr.off .tag { background: #F0ECDF; color: #B5AE9C; }
+    </style>
+</head>
+<body>
+
+<h1>정기구독 · 고정지출</h1>
+<a class="btn" th:href="@{/}">← 홈으로</a>
+<a class="btn" th:href="@{/subscriptions/new}" style="margin-left:8px;">+ 항목 추가</a>
+
+<div class="stat-row">
+    <div class="stat-box">
+        <div class="label">월 고정지출</div>
+        <div class="value" th:text="${#numbers.formatInteger(page.monthlyTotal(), 0, 'COMMA')} + '원'">0원</div>
+        <div class="sub">사용 중인 항목 합계</div>
+    </div>
+    <div class="stat-box">
+        <div class="label">연 환산</div>
+        <div class="value" th:text="${#numbers.formatInteger(page.yearlyTotal(), 0, 'COMMA')} + '원'">0원</div>
+        <div class="sub">월 고정지출 × 12</div>
+    </div>
+    <div class="stat-box">
+        <div class="label">이번 달 남은 결제</div>
+        <div class="value" th:text="${#numbers.formatInteger(page.remainingThisMonth(), 0, 'COMMA')} + '원'">0원</div>
+        <div class="sub">오늘 이후 결제 예정</div>
+    </div>
+    <div class="stat-box">
+        <div class="label">사용 중</div>
+        <div class="value" th:text="${page.activeCount()} + '개'">0개</div>
+        <div class="sub" th:text="'전체 ' + ${#lists.size(page.items())} + '개 중'">전체 0개 중</div>
+    </div>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+        <tr>
+            <th>항목</th>
+            <th>월 결제액</th>
+            <th>결제일</th>
+            <th>다음 결제</th>
+            <th>상태</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${page.items()}" th:classappend="${item.active()} ? '' : 'off'">
+            <td>
+                <strong th:text="${item.name()}">넷플릭스</strong>
+                <span class="tag" th:text="${item.category()}">구독</span>
+                <span class="memo" th:if="${item.memo() != null and !item.memo().isBlank()}"
+                      th:text="${item.memo()}">메모</span>
+            </td>
+            <td th:text="${#numbers.formatInteger(item.amount(), 0, 'COMMA')} + '원'">0원</td>
+            <td th:text="'매월 ' + ${item.billingDay()} + '일'">매월 1일</td>
+            <td>
+                <!-- 사용 중인 항목만 다음 결제일과 D-day 표시 -->
+                <span th:if="${item.active()}">
+                    <span th:text="${item.nextBillingDate()}">2026-11-17</span>
+                    <span class="dday" th:classappend="${3 >= item.daysLeft()} ? 'soon' : ''"
+                          th:text="${item.daysLeft() == 0} ? '오늘' : ('D-' + ${item.daysLeft()})">D-5</span>
+                </span>
+                <span th:unless="${item.active()}">-</span>
+            </td>
+            <td>
+                <span class="chip" th:classappend="${item.active()} ? 'on' : 'off'"
+                      th:text="${item.active()} ? '사용 중' : '해지됨'">사용 중</span>
+            </td>
+            <td class="actions">
+                <a th:href="@{/subscriptions/{id}/edit(id=${item.id()})}">수정</a>
+                <form th:action="@{/subscriptions/{id}/toggle(id=${item.id()})}" method="post" style="display:inline;">
+                    <button type="submit" th:text="${item.active()} ? '해지' : '재개'">해지</button>
+                </form>
+                <form th:action="@{/subscriptions/{id}/delete(id=${item.id()})}" method="post" style="display:inline;">
+                    <button type="submit" onclick="return confirm('삭제하시겠습니까?');">삭제</button>
+                </form>
+            </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(page.items())}">
+            <td colspan="6" style="color:#6B6456;">등록된 항목이 없어요. "+ 항목 추가"로 구독료나 통신비 같은 고정지출을 등록해보세요.</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

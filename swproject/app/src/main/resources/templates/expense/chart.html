@@ -5,44 +5,75 @@
     <title>지출 분석</title>
     <link rel="stylesheet" th:href="@{/style.css}">
     <style>
-        .chart-header { display: flex; justify-content: space-between; align-items: center; max-width: 800px; margin-bottom: 18px; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; max-width: 860px; margin-bottom: 18px; }
         .month-nav { display: flex; align-items: center; gap: 14px; font-size: 14px; }
         .month-nav a { color: #6B9080; text-decoration: none; font-weight: 600; }
-        .stat-row { display: flex; gap: 30px; margin-bottom: 24px; }
+        .stat-row { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
         .stat-box { background: #FFFFFF; border: 1px solid #EDE7D8; border-radius: 14px; padding: 16px 22px; }
         .stat-box .label { font-size: 12px; color: #9C9584; margin-bottom: 6px; }
         .stat-box .value { font-size: 22px; font-weight: 700; color: #3A3A32; }
+        .stat-box .value.income { color: #3B7BBF; }
 
         /* ---------- 캘린더 ---------- */
-        .calendar { background: #FFFFFF; border: 1px solid #EDE7D8; border-radius: 18px; padding: 20px; max-width: 800px; }
-
-        /* 7칸짜리 격자. 칸이 7개를 넘으면 자동으로 다음 줄로 넘어가서 "주" 단위가 만들어짐 */
+        .calendar { background: #FFFFFF; border: 1px solid #EDE7D8; border-radius: 18px; padding: 20px; max-width: 860px; }
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-
         .cal-head { text-align: center; font-size: 12px; color: #9C9584; padding-bottom: 6px; }
         .cal-head.sun { color: #F0805E; }
 
         .cal-cell {
-            min-height: 78px;
-            border: 1px solid #F4F0E4;
+            min-height: 104px;
+            border: 1px solid #F0EBDD;
             border-radius: 10px;
-            padding: 8px;
+            padding: 7px 8px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 3px;
             background: #FBFAF5;
         }
         .cal-cell .d { font-size: 12px; color: #6B6456; }
-        .cal-cell .amt { font-size: 12px; font-weight: 700; color: #3A3A32; text-align: right; }
-
-        .cal-cell.has  { background: #EAF2EA; border-color: #D5E4D8; }   /* 지출 있는 날 */
-        .cal-cell.high { background: #FCE9E2; border-color: #F6CDBF; }   /* 평균보다 많이 쓴 날 */
+        .cal-cell .amt { font-size: 11px; font-weight: 700; color: #3A3A32; }
         .cal-cell.high .amt { color: #D9603B; }
+        .cal-cell .inc { font-size: 11px; font-weight: 700; color: #3B7BBF; text-align: right; }
 
-        .legend { display: flex; gap: 16px; margin-top: 14px; font-size: 12px; color: #9C9584; }
-        .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
-        .legend .l-has::before  { background: #EAF2EA; border: 1px solid #D5E4D8; }
-        .legend .l-high::before { background: #FCE9E2; border: 1px solid #F6CDBF; }
+        /* 카테고리 막대: 칸 아래쪽에 붙여서 아래→위로 자라게 */
+                .bars { margin-top: auto; height: 38px; display: flex; align-items: flex-end; gap: 3px; }
+
+        /* 막대를 감싸는 칸: 막대가 낮아도 칸 아래 38px 전체가 호버 영역이 됨 */
+        .bar-wrap { position: relative; flex: 1; max-width: 16px; height: 100%; display: flex; align-items: flex-end; }
+        .bar { width: 100%; min-height: 3px; border-radius: 3px 3px 0 0; }
+
+        /* 말풍선: 평소엔 숨겨두고, 막대에 마우스를 올리면 표시 */
+        .tip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+            width: max-content;
+            max-width: 240px;
+            background: #16233A;
+            color: #F4F1E6;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            line-height: 1.5;
+            box-shadow: 0 6px 18px rgba(0,0,0,.18);
+            pointer-events: none;
+        }
+        .bar-wrap:hover .tip { display: block; }
+        .tip-title { font-weight: 700; margin-bottom: 4px; }
+        .tip ul { margin: 0; padding: 0; list-style: none; }
+        .tip li { color: rgba(244,241,230,.85); }
+
+        /* 카테고리 색상 (총액 큰 순서대로 0번부터) */
+        .c0 { background: #6B9080; } .c1 { background: #F0805E; } .c2 { background: #FFD08A; } .c3 { background: #8E7CC3; }
+        .c4 { background: #9CB89F; } .c5 { background: #C7A47B; } .c6 { background: #D98BA3; } .c7 { background: #7FB3C8; }
+
+        .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 14px; font-size: 12px; color: #6B6456; }
+        .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+        .l-high { color: #D9603B; }
+        .l-high::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; border: 1.5px solid #F0805E; }
     </style>
 </head>
 <body>
@@ -60,6 +91,10 @@
 
 <div class="stat-row">
     <div class="stat-box">
+        <div class="label">총 수입</div>
+        <div class="value income" th:text="${#numbers.formatInteger(chart.totalIncome(), 0, 'COMMA')} + '원'">0원</div>
+    </div>
+    <div class="stat-box">
         <div class="label">총 지출</div>
         <div class="value" th:text="${#numbers.formatInteger(chart.total(), 0, 'COMMA')} + '원'">0원</div>
     </div>
@@ -72,7 +107,6 @@
 <div class="calendar">
     <div class="cal-grid">
 
-        <!-- 요일 헤더 -->
         <div class="cal-head sun">일</div>
         <div class="cal-head">월</div>
         <div class="cal-head">화</div>
@@ -81,77 +115,52 @@
         <div class="cal-head">금</div>
         <div class="cal-head">토</div>
 
-        <!-- 날짜 칸: 1일부터 말일까지 하루에 한 칸씩 만들어짐 -->
-        <!-- th:with : 그날의 지출액을 amt 라는 이름으로 잠깐 저장해두고 아래에서 재사용 -->
+        <!-- th:with : 그날의 지출(amt), 수입(inc), 카테고리 막대 목록(bars)을 변수로 저장 -->
         <div th:each="day, stat : ${chart.days()}"
-             th:with="amt=${chart.amounts().get(stat.index)}"
+             th:with="amt=${chart.amounts().get(stat.index)}, inc=${chart.incomes().get(stat.index)}, bars=${chart.dayBars().get(stat.index)}"
              class="cal-cell"
-             th:classappend="${amt > chart.average()} ? 'high' : (${amt > 0} ? 'has' : '')"
              th:style="${day == 1} ? ('grid-column-start:' + ${chart.startOffset() + 1}) : ''">
 
-            <div class="d" th:text="${day}">1</div>
+            <div class="top">
+                <span class="d" th:text="${day}">1</span>
+                <span class="amt" th:if="${amt > 0}"
+                      th:text="'-' + ${#numbers.formatInteger(amt, 0, 'COMMA')}">-0</span>
+            </div>
 
-            <!-- 지출이 있는 날만 금액 표시 -->
-            <div class="amt" th:if="${amt > 0}"
-                 th:text="${#numbers.formatInteger(amt, 0, 'COMMA')}">0</div>
+            <div class="inc" th:if="${inc > 0}"
+                 th:text="'+' + ${#numbers.formatInteger(inc, 0, 'COMMA')}">+0</div>
+
+            <!-- 그날 쓴 카테고리마다 막대 하나. 높이는 이번 달 최대 금액 대비 % -->
+            <div class="bars">
+                <div class="bar-wrap" th:each="bar : ${bars}">
+                    <div class="bar" th:classappend="'c' + ${bar.colorIndex()}"
+                         th:style="'height:' + ${bar.heightPercent()} + '%'"></div>
+
+                    <!-- 마우스를 올리면 나타나는 말풍선 -->
+                    <div class="tip">
+                        <div class="tip-title">
+                            <i class="sw" th:classappend="'c' + ${bar.colorIndex()}"></i>
+                            <span th:text="${bar.category()}">식비</span> ·
+                            <span th:text="${#numbers.formatInteger(bar.amount(), 0, 'COMMA')} + '원'">0원</span>
+                        </div>
+                        <ul>
+                            <li th:each="item : ${bar.items()}" th:text="${item}">스타벅스  4,500원</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
 
+    <!-- 범례: 서비스에서 정한 순서(색상 번호)와 같은 순서로 출력 -->
     <div class="legend">
-        <span class="l-has">지출 있음</span>
+        <span th:each="cat, s : ${chart.legendCategories()}">
+            <i class="sw" th:classappend="'c' + ${s.index % 8}"></i><span th:text="${cat}">식비</span>
+        </span>
         <span class="l-high">평균 초과</span>
     </div>
 </div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<script th:inline="javascript">
-    /*<![CDATA[*/       <!-- 안에 특수문자 있어도 그냥 순수텍스트로 취급함 -->
-    const days = /*[[${chart.days()}]]*/ []; < !-- 서버가 렌더링할때, /*[[${chart.days()}]]*/ 부분이 실제 데이터로 통째로 바뀜-->
-    const amounts = /*[[${chart.amounts()}]]*/ [];
-    const average = /*[[${chart.average()}]]*/ 0;
-    /*]]>*/
-
-    const ctx = document.getElementById('dailyChart');
-
-    new Chart(ctx, {
-      data: {
-        labels: days,
-        datasets: [
-          {
-            type: 'bar',
-            label: '일별 지출',
-            data: amounts,
-            backgroundColor: amounts.map(a => a > average ? '#F0805E' : '#B7D0C1'),
-            borderRadius: 4,
-          },
-          {
-            type: 'line',
-            label: '평균',
-            data: days.map(() => average),
-            borderColor: '#3A3A32',
-            borderDash: [6, 4],
-            borderWidth: 1.5,
-            pointRadius: 0,
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (item) => item.dataset.label + ': ' + item.formattedValue + '원'
-            }
-          }
-        },
-        scales: {
-          y: { beginAtZero: true, ticks: { callback: (v) => v.toLocaleString() + '원' } }
-        }
-      }
-    });
-</script>
 
 </body>
 </html>
