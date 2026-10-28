@@ -27,4 +27,4 @@ spring:
 
 app:
   ai:
-    api-key: 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
+    api-key:
