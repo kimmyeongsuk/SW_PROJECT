@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9주차 과제 — 구현 과정</title>
+<style>
+  :root{
+    --ink:#1B2A41; --paper:#FAF7EF; --line:#E4DECE; --green:#2F5233;
+    --amber:#B8791A; --muted:#6B6456; --code-bg:#16233A; --code-fg:#F4F1E6;
+  }
+  * { box-sizing: border-box; }
+  body{
+    margin:0;
+    font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    background: var(--paper); color: var(--ink); line-height: 1.7;
+  }
+  .wrap{ max-width: 760px; margin: 0 auto; padding: 8vh 6vw 12vh; }
+  .eyebrow{ font-family: 'Courier New', monospace; font-size: 12.5px; color: var(--muted); margin-bottom: 14px; letter-spacing: .02em; }
+  h1{ font-size: 32px; font-weight: 700; margin: 0 0 10px; line-height:1.3; }
+  .subtitle{ font-size: 16px; color: var(--muted); margin-bottom: 40px; }
+  h2{ font-size: 22px; font-weight: 700; margin: 48px 0 14px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink); }
+  h2 .num{ color: var(--green); margin-right: 8px; }
+  h3{ font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  p{ font-size: 15px; margin: 0 0 14px; }
+  ul, ol{ font-size: 15px; margin: 0 0 16px; padding-left: 22px; }
+  li{ margin-bottom: 6px; }
+  .callout{ background:#fff; border:1px solid var(--line); border-left:3px solid var(--amber); border-radius:8px; padding:14px 18px; font-size:14px; color:var(--muted); margin:18px 0; }
+  .callout strong{ color: var(--ink); }
+  table{ width:100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 13.5px; }
+  th, td{ text-align:left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th{ background: #F0ECDF; font-weight: 700; font-size: 12px; color: var(--muted); }
+  pre{ background: var(--code-bg); color: var(--code-fg); padding: 18px 20px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 16px 0 22px; }
+  code{ font-family: 'Courier New', monospace; }
+  p code, li code, td code{ background:#EFE9D8; padding:1px 6px; border-radius:4px; font-size:13px; color:var(--amber); }
+  .step{ display:flex; gap:14px; margin-bottom:18px; }
+  .step .n{ flex-shrink:0; width:26px; height:26px; border-radius:50%; background:var(--green); color:#fff; font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .step .body{ font-size:14.5px; padding-top:2px; }
+  .step .body b{ display:block; font-size:15px; margin-bottom:2px; }
+  .before-after{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0 24px; }
+  .ba-box{ background:#fff; border:1px solid var(--line); border-radius:10px; padding:16px 18px; }
+  .ba-box .tag{ font-size:11px; font-weight:700; letter-spacing:.03em; margin-bottom:8px; display:inline-block; padding:2px 8px; border-radius:10px; }
+  .ba-box.before .tag{ background:#F3E4DD; color:#B8593C; }
+  .ba-box.after .tag{ background:#DEE8DA; color:var(--green); }
+  .ba-box p{ font-size:13.5px; margin:0; }
+  @media (max-width: 600px){ .before-after{ grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">지출 예측 가계부 · 구현 기록</div>
+  <h1>9주차 과제</h1>
+  <p class="subtitle">다음 달 지출 예측 방법 설계부터 캘린더 카테고리 막대, CSV 업로드 개선, 정기구독 페이지까지의 구현 과정</p>
+
+  <h2><span class="num"></span>다음 달 지출 예측 방법</h2>
+  <p>이번 달 "월말 예상"과 달리 다음 달은 아직 기록이 없어서 과거 데이터로 추정해야 한다. 이 단계는 방법 설계까지 진행했고 구현은 아직 하지 않았다.</p>
+
+  <table>
+    <tr><th>방법</th><th>계산</th><th>필요한 데이터</th><th>특징</th></tr>
+    <tr><td>최근 N개월 평균</td><td>최근 3개월 총지출의 평균</td><td>3개월 이상</td><td>가장 단순하지만 추세를 반영하지 못함</td></tr>
+    <tr><td>가중 이동평균</td><td>최근 달에 더 큰 가중치 (예: 0.5 / 0.3 / 0.2)</td><td>3개월 이상</td><td>최근 소비 변화가 반영됨</td></tr>
+    <tr><td>고정/변동 분리</td><td>고정지출은 그대로, 변동지출만 평균</td><td>1~2개월부터</td><td>정확하고 설명하기 쉬움</td></tr>
+    <tr><td>카테고리별 예측</td><td>카테고리마다 따로 예측해서 합산</td><td>3개월 이상</td><td>어느 항목이 늘 것 같은지 보여줌</td></tr>
+    <tr><td>요일 보정</td><td>요일별 평균 × 다음 달의 요일 수</td><td>4주 이상</td><td>캘린더 화면과 잘 맞음</td></tr>
+  </table>
+  <p>선형회귀나 지수평활 같은 시계열 모델은 6개월 이상의 데이터가 있어야 안정적이라 이번 범위에서는 제외했다.</p>
+
+  <h3>채택: 고정/변동 분리 + 가중 이동평균</h3>
+<pre><code>다음 달 예상 지출 = 고정지출 + 변동지출 예측
+고정지출      = 등록된 정기구독 합계 + 매달 반복되는 결제(통신비 등)
+변동지출 예측 = 최근 3개월 변동지출의 가중평균 (0.5 / 0.3 / 0.2)</code></pre>
+
+  <p>고정지출은 이미 알고 있는 금액이라 오차가 없고, 불확실한 부분이 변동지출 하나로 줄어든다. 고정지출 값은 뒤에서 만든 정기구독 페이지의 "월 고정지출" 합계를 그대로 쓸 수 있다.</p>
+
+  <h3>계산 예시 (10월 더미 데이터, 9월·8월은 가정값)</h3>
+  <table>
+    <tr><th>항목</th><th>계산</th><th>금액</th></tr>
+    <tr><td>고정지출</td><td>구독 3개(36,800원) + 통신비(55,000원)</td><td>91,800원</td></tr>
+    <tr><td>10월 변동지출</td><td>총지출 365,100원 − 고정지출 91,800원</td><td>273,300원</td></tr>
+    <tr><td>변동지출 예측</td><td>0.5×273,300 + 0.3×260,000(9월 가정) + 0.2×240,000(8월 가정)</td><td>262,650원</td></tr>
+    <tr><td><b>다음 달 예상 지출</b></td><td>91,800 + 262,650</td><td><b>354,450원</b></td></tr>
+  </table>
+
+  <h3>구현 전에 정해둔 유의사항</h3>
+  <ul>
+    <li><b>데이터 부족</b> — 지금 DB에는 몇 달치밖에 없어서, 시연용으로 6개월치 더미 CSV가 필요하다.</li>
+    <li><b>숫자 하나가 아니라 범위로</b> — 최근 달들의 최소~최대로 "약 33만~37만 원"처럼 보여준다.</li>
+    <li><b>일회성 지출 제외</b> — 여행·경조사 같은 큰 지출이 평균을 왜곡하지 않도록 제외하는 옵션이 필요하다.</li>
+    <li><b>백테스트</b> — 과거 달을 가려놓고 예측한 뒤 실제와 비교해 오차율을 구한다.</li>
+  </ul>
+
+  <h2><span class="num"></span>캘린더에 카테고리별 막대 추가</h2>
+  <p>지출 분석 캘린더의 하루 칸 안에, 그날의 지출을 카테고리별 작은 막대로 보여주도록 확장했다.</p>
+ 
+
+  <h3>설계 결정</h3>
+  <ol>
+    <li><b>막대 높이 기준</b> — 이번 달에서 가장 큰 "하루·카테고리" 금액을 100%로 둔다. 10월 더미 데이터에서는 10/14 쇼핑 58,700원이 기준이다. 그래서 칸끼리 높이를 비교할 수 있고, 너무 낮아 안 보이지 않도록 최소 8%로 했다.</li>
+    <li><b>색상</b> — 이번 달 총액이 큰 카테고리부터 0번, 1번… 번호를 붙이고 8가지 색을 돌려 쓴다. 범례도 같은 순서로 출력해서 색과 이름이 어긋나지 않는다.</li>
+    <li><b>평균 초과 표시</b> — 기존에는 칸 배경색으로 표시했는데 막대 색과 겹쳐서 코랄 테두리로 바꿨다.</li>
+  </ol>
+
+  <h2><span class="num"></span>막대에 마우스를 올리면 거래 내역 표시</h2>
+  <p>막대만으로는 "어디에 썼는지" 알 수 없어서, 마우스를 올리면 그날 그 카테고리의 거래 목록이 말풍선으로 나오게 했다.</p>
+
+  <div class="step"><div class="n">1</div><div class="body"><b>거래 조회</b>그 달의 거래를 한 번에 조회해 지출만 남기고, "날짜|카테고리"를 키로 묶는다.</div></div>
+  <div class="step"><div class="n">2</div><div class="body"><b>문자열로 가공</b>"스타벅스  4,500원" 형태로 만들어 <code>CategoryBarDto</code>의 <code>items</code>에 담는다. 8건을 넘으면 8건만 보여주고 "외 N건"으로 줄인다.</div></div>
+  <div class="step"><div class="n">3</div><div class="body"><b>CSS로 표시</b>스크립트 없이 <code>:hover</code>만으로 말풍선을 보였다 숨겼다 한다.</div></div>
+
+  <ul>
+    <li>막대를 <code>.bar-wrap</code>으로 감싸서, 막대가 낮아도 칸 아래 영역 전체가 마우스를 올리는 범위가 되게 했다.</li>
+    <li>말풍선에 <code>pointer-events: none</code>을 줘서 말풍선이 마우스 아래에서 깜빡이는 것을 막았다.</li>
+    <li>정적 미리보기로 같은 카테고리 거래가 여러 건인 날과 맨 오른쪽 열의 말풍선 위치를 확인했다.</li>
+    <li>한계: 마우스 전용이라 터치 화면에서는 안 뜰 수 있고, 창이 아주 좁으면 가장자리 칸의 말풍선이 잘릴 수 있다.</li>
+  </ul>
+
+  <h2><span class="num"></span>CSV 인코딩 자동 감지</h2>
+  <div class="before-after">
+    <div class="ba-box before"><span class="tag">문제</span><p>업로드 코드가 UTF-8로 고정되어 있어서, CP949(EUC-KR)로 저장된 은행 파일은 헤더가 깨져 "날짜 컬럼을 찾을 수 없습니다"가 나온다.</p></div>
+    <div class="ba-box after"><span class="tag">해결</span><p>파일 바이트를 보고 인코딩을 추정해서 문자열로 바꾼 뒤 CSV 파서에 넘긴다.</p></div>
+  </div>
+  <p>인코딩을 100% 맞추는 것은 원리상 불가능하다(바이트만 보고 추측하는 것이므로). 대신 한국 은행 CSV에서 실제로 나오는 네 가지를 정확히 처리하도록 3단계로 나눴다.</p>
+  <table>
+    <tr><th>단계</th><th>방법</th><th>처리하는 인코딩</th></tr>
+    <tr><td>1</td><td>파일 맨 앞의 BOM(표식)이 있으면 그대로 믿고 BOM은 잘라냄</td><td>UTF-8 BOM, UTF-16LE, UTF-16BE</td></tr>
+    <tr><td>2</td><td>BOM이 없으면 "엄격한 UTF-8"로 읽어봄. 깨진 글자가 하나라도 있으면 예외</td><td>UTF-8</td></tr>
+    <tr><td>3</td><td>UTF-8이 아니면 CP949(MS949)로 읽음</td><td>CP949 (EUC-KR 포함)</td></tr>
+  </table>
+  <p>2단계가 통하는 이유는 CP949로 저장된 한글 바이트가 UTF-8 규칙에 맞지 않기 때문이다. UTF-8 파일은 항상 통과하고, CP949 파일은 예외가 나서 3단계로 넘어간다.</p>
+
+  <h3>검증</h3>
+  <p>같은 내용의 CSV를 UTF-8, UTF-8 BOM, CP949, UTF-16LE 네 가지로 만들어 JDK 21에서 감지 메서드를 돌렸다. 4개 모두 헤더 <code>거래일시,적요,출금액,입금액</code>과 첫 행이 정상으로 읽혔다. 기존 방식(UTF-8 고정)으로 CP949 파일을 읽으면 헤더가 깨졌다. 다만 감지 메서드만 따로 검증한 것이라, 실제 업로드 화면에서의 확인은 별도로 해야 한다.</p>
+
+  <h3>인코딩 말고 업로드를 막는 것들</h3>
+  <ul>
+    <li><b>파일 크기</b> — Spring 기본 업로드 한도가 1MB라서 거래가 많은 파일은 거절된다. <code>spring.servlet.multipart.max-file-size</code> 설정이 필요하다.</li>
+    <li><b>헤더 위의 안내 줄</b> — 은행에 따라 헤더 앞에 계좌 정보 줄이 붙어 있으면 헤더를 못 찾는다.</li>
+    <li><b>구분자</b> — 콤마가 아니라 탭이나 세미콜론으로 구분된 파일이 있다.</li>
+    <li><b>금액 컬럼 구조</b> — 출금/입금이 하나의 "거래금액" 컬럼으로 합쳐진 형식(형식 B)은 처리 코드를 아직 넣지 않았다.</li>
+  </ul>
+
+  <h2><span class="num"></span>업로드했는데 0건 등록된 문제</h2>
+  <div class="before-after">
+    <div class="ba-box before"><span class="tag">증상</span><p>UTF-8 BOM 파일(82행)을 올렸는데 오류 메시지 없이 한 건도 등록되지 않았다.</p></div>
+    <div class="ba-box after"><span class="tag">원인</span><p>금액이 <code>3500000.0</code>, <code>31400.0</code>처럼 <code>.0</code>이 붙어 있어서 <code>Long.parseLong</code>이 실패하고 0을 돌려줬다. 금액이 0이면 건너뛰는 코드라 82행이 전부 건너뛰어졌다.</p></div>
+  </div>
+
+  <h3>원인을 좁혀간 과정</h3>
+  <div class="step"><div class="n">1</div><div class="body"><b>파일 자체 확인</b>UTF-8 BOM이고, 헤더(<code>거래일시,적요,출금액,입금액</code>)와 날짜 형식(<code>2026-09-01</code>)이 모두 정상이었다. 그래서 인코딩·컬럼명 문제는 아니었다.</div></div>
+  <div class="step"><div class="n">2</div><div class="body"><b>금액 칸 확인</b>값이 있는 금액 칸 82개가 전부 정수가 아닌 소수 표기(<code>.0</code>)라 변환에 실패한다는 것을 확인했다.</div></div>
+  <div class="step"><div class="n">3</div><div class="body"><b>수정 전후 비교</b>실제 파일을 기존·수정 <code>parseAmount</code>로 각각 돌려 등록 건수를 비교했다.</div></div>
+
+
+  <table>
+    <tr><th>구분</th><th>결과</th></tr>
+    <tr><td>기존 <code>parseAmount</code></td><td>등록 0건</td></tr>
+    <tr><td>수정한 <code>parseAmount</code></td><td>등록 82건 (지출 합계 1,749,600원, 수입 합계 3,914,500원)</td></tr>
+    <tr><td>변환 예</td><td><code>"31400.0"</code> → 31400, <code>"1,234원"</code> → 1234, <code>"3.5E+6"</code> → 3500000</td></tr>
+  </table>
+  <div class="callout"><strong>해결해야하는 점</strong> — 변환에 실패한 줄을 조용히 건너뛰는 코드는 원인을 찾기 어렵다. 건너뛴 줄 수와 이유를 업로드 결과 화면에 보여주는 것이 필요하다. 또 지금은 중복 방지가 없어서 같은 파일을 두 번 올리면 164건이 된다.</div>
+
+  <h2><span class="num"></span>정기구독·고정지출 페이지</h2>
+  <p>계획서의 "정기구독 관리" 기능이다. 구독뿐 아니라 통신비, 월세, 보험처럼 매달 나가는 고정지출을 한 화면에서 관리한다.</p>
+  <table>
+    <tr><th>기능</th><th>내용</th></tr>
+    <tr><td>목록</td><td>항목, 월 결제액, 결제일, 다음 결제일과 D-day, 상태. 3일 이내 결제는 강조 표시</td></tr>
+    <tr><td>요약 4가지</td><td>월 고정지출, 연 환산(×12), 이번 달 남은 결제, 사용 중 개수</td></tr>
+    <tr><td>해지/재개</td><td>삭제 대신 비활성화. 합계에서는 빠지고 목록 맨 아래에 흐리게 남음</td></tr>
+    <tr><td>카테고리</td><td>구독, 통신, 주거/관리비, 보험, 교통, 기타</td></tr>
+  </table>
+
+  <h3>핵심 로직: 다음 결제일 계산</h3>
+  <ul>
+    <li>결제일이 그 달에 없으면(31일 결제인데 2월 등) 그 달의 마지막 날로 조정한다.</li>
+    <li>이번 달 결제일이 오늘 이후(오늘 포함)면 이번 달, 이미 지났으면 다음 달로 본다.</li>
+    <li>"이번 달 남은 결제"는 이번 달 결제일이 오늘 이후인 사용 중 항목의 합계이다.</li>
+    <li>정렬은 사용 중인 항목 먼저, 그 안에서는 결제일이 가까운 순, 해지된 항목은 맨 아래이다.</li>
+  </ul>
+
+  <h3>검증</h3>
+  <p>날짜를 고정해서 JDK 21에서 로직만 따로 돌려봤다. 달이 짧거나 해가 넘어가는 경계 상황이 의도대로 계산되었다.</p>
+  <table>
+    <tr><th>상황 (오늘 기준)</th><th>결과</th></tr>
+    <tr><td>2026-10-27, 샘플 6개 (해지 1개 포함)</td><td>월 고정지출 675,900원, 이번 달 남은 결제 644,000원. 정렬: 통신비 D-0, 보험료 D-2, 월세 D-4, 유튜브 D-9, 넷플릭스 D-21, 해지 항목 맨 아래</td></tr>
+    <tr><td>31일 결제, 2026-02-27</td><td>다음 결제 2026-02-28 (D-1)</td></tr>
+    <tr><td>31일 결제, 2026-04-30</td><td>다음 결제 2026-04-30 (D-0)</td></tr>
+    <tr><td>31일 결제, 2026-04-01</td><td>다음 결제 2026-04-30 (D-29)</td></tr>
+    <tr><td>1일 결제, 2026-12-20</td><td>다음 결제 2027-01-01 (D-12)</td></tr>
+  </table>
+
+  <p>홈 화면의 "정기구독" 카드와 사이드바 메뉴는 이미 <code>/subscriptions</code>로 연결되어 있어서 기존 화면은 고치지 않았다. 화면은 샘플 데이터로 그린 정적 미리보기로 확인했고, 실제 앱에서의 동작 확인은 별도로 해야 한다.</p>
+
+  <h2><span class="num"></span>다음 주 과제</h2>
+  <ul>
+    <li>정기구독 정보를 기존 화면과 연결하기 — 홈에 월 고정지출 요약, 지출 분석 캘린더에 결제 예정일 표시 (기존 기능은 그대로 두고 추가)</li>
+    <li>다음 달 예측 구현 — 6개월치 더미 데이터 준비, 고정지출은 정기구독 합계 사용, 백테스트로 오차율 확인</li>
+    <li>CSV 업로드 — 건너뛴 줄 수와 이유 표시, 중복 방지, 헤더 앞 안내 줄·구분자·형식 B(거래금액 하나) 처리</li>
+  </ul>
+
+</div>
+</body>
+</html>
