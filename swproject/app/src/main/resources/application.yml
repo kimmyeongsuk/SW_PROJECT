@@ -27,4 +27,4 @@ spring:
 
 app:
   ai:
-    api-key:
+    api-key: ${API}
