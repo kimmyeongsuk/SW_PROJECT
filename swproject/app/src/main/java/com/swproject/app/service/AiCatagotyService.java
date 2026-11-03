@@ -15,7 +15,7 @@ import java.util.Map;
 @Service
 public class AiCatagotyService {
 
-    @Value("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")
+    @Value("${API_KEY}")
     private String apiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
