@@ -1,0 +1,179 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>10주차 과제 구현 과정</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  /* 레이아웃: 9주차 과제와 같은 한 칸짜리 문서(최대 760px). 색은 9주차 팔레트를 토큰으로 옮김 */
+  :root{
+    --ink:#1B2A41; --paper:#FAF7EF; --card:#FFFFFF; --line:#E4DECE; --green:#2F5233;
+    --amber:#B8791A; --muted:#6B6456; --th-bg:#F0ECDF; --inline-bg:#EFE9D8;
+    --code-bg:#16233A; --code-fg:#F4F1E6;
+    --bad-bg:#F3E4DD; --bad-fg:#B8593C; --good-bg:#DEE8DA; --good-fg:#2F5233;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink:#E6E9EF; --paper:#14181F; --card:#1C222C; --line:#2E3644; --green:#8DC495;
+      --amber:#E0A64A; --muted:#A5A092; --th-bg:#232B37; --inline-bg:#2A3140;
+      --code-bg:#0C111A; --code-fg:#F4F1E6;
+      --bad-bg:#3B2822; --bad-fg:#F0967A; --good-bg:#233326; --good-fg:#8DC495;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink:#E6E9EF; --paper:#14181F; --card:#1C222C; --line:#2E3644; --green:#8DC495;
+    --amber:#E0A64A; --muted:#A5A092; --th-bg:#232B37; --inline-bg:#2A3140;
+    --code-bg:#0C111A; --code-fg:#F4F1E6;
+    --bad-bg:#3B2822; --bad-fg:#F0967A; --good-bg:#233326; --good-fg:#8DC495;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body{
+    margin:0;
+    font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    background: var(--paper); color: var(--ink); line-height: 1.7;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap{ max-width: 760px; margin: 0 auto; padding-block: 8vh 12vh; }
+  .eyebrow{ font-family: 'Courier New', monospace; font-size: 12.5px; color: var(--muted); margin-bottom: 14px; letter-spacing: .02em; }
+  h1{ font-size: 32px; font-weight: 700; margin: 0 0 10px; line-height:1.3; text-wrap: balance; }
+  .subtitle{ font-size: 16px; color: var(--muted); margin-bottom: 40px; }
+  h2{ font-size: 22px; font-weight: 700; margin: 48px 0 14px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink); text-wrap: balance; }
+  h3{ font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  p{ font-size: 15px; margin: 0 0 14px; }
+  ul, ol{ font-size: 15px; margin: 0 0 16px; padding-left: 22px; }
+  li{ margin-bottom: 6px; }
+  .callout{ background:var(--card); border:1px solid var(--line); border-left:3px solid var(--amber); border-radius:8px; padding:14px 18px; font-size:14px; color:var(--muted); margin:18px 0; }
+  .callout strong{ color: var(--ink); }
+  .tbl{ overflow-x: auto; margin: 16px 0 24px; }
+  table{ width:100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td{ text-align:left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th{ background: var(--th-bg); font-weight: 700; font-size: 12px; color: var(--muted); }
+  pre{ background: var(--code-bg); color: var(--code-fg); padding: 18px 20px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 16px 0 22px; }
+  code{ font-family: 'Courier New', monospace; }
+  p code, li code, td code{ background:var(--inline-bg); padding:1px 6px; border-radius:4px; font-size:13px; color:var(--amber); overflow-wrap: anywhere; }
+  .step{ display:flex; gap:14px; margin-bottom:18px; }
+  .step .n{ flex-shrink:0; width:26px; height:26px; border-radius:50%; background:var(--green); color:var(--paper); font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .step .body{ font-size:14.5px; padding-top:2px; min-width: 0; }
+  .step .body b{ display:block; font-size:15px; margin-bottom:2px; }
+  .before-after{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0 24px; }
+  .ba-box{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; min-width: 0; }
+  .ba-box .tag{ font-size:11px; font-weight:700; letter-spacing:.03em; margin-bottom:8px; display:inline-block; padding:2px 8px; border-radius:10px; }
+  .ba-box.before .tag{ background:var(--bad-bg); color:var(--bad-fg); }
+  .ba-box.after .tag{ background:var(--good-bg); color:var(--good-fg); }
+  .ba-box p{ font-size:13.5px; margin:0; }
+  @media (max-width: 600px){ .before-after{ grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+
+  <div class="eyebrow">지출 예측 가계부 · 구현 기록</div>
+  <h1>11주차 과제</h1>
+  <p class="subtitle">정기구독 자동 연결, 결제 예정일 캘린더, 다음 달 지출 예측, CSV 업로드 개선까지의 구현 과정</p>
+
+  <h2></h2>
+  <p>지난 주에 만든 정기구독 페이지를 기존 화면과 연결하고, 설계만 해둔 다음 달 지출 예측을 구현했다. 모든 변경은 기존 기능을 그대로 두고 필요한 곳에 추가하는 방식으로 진행했다.</p>
+
+  <div class="tbl"><table>
+    <tr><th>기능</th><th>위치</th><th>내용</th></tr>
+    <tr><td>정기구독 자동 연결</td><td>내역 저장 시점</td><td>카테고리가 "구독"인 지출을 정기구독에 자동 등록</td></tr>
+    <tr><td>결제 예정일 표시</td><td>지출 분석 캘린더</td><td>날짜 칸에 정기구독 결제일을 함께 표시</td></tr>
+    <tr><td>다음 달 예상 지출</td><td>홈, 지출 분석</td><td>홈은 이번 달 지출 옆에, 지출 분석은 하루 평균 지출 옆에 표시</td></tr>
+    <tr><td>CSV 업로드 개선</td><td>명세서 가져오기</td><td>건너뜀 사유 표시, 중복 방지, 안내 줄·구분자·형식 B 처리</td></tr>
+  </table></div>
+
+  <h2>정기구독 자동 연결</h2>
+  <p>내역(<code>Expense</code>)의 카테고리가 "구독"이면 정기구독(<code>Subscription</code>)에 자동으로 등록되도록 연결했다. 데이터가 들어오는 모든 경로에서 같은 메서드 <code>registerFromExpenses</code>를 호출한다.</p>
+
+  <h3>연결한 지점</h3>
+  <ul>
+    <li><b>CSV 업로드</b> — <code>importCsv</code>가 끝날 때, 업로드된 내역을 모아서 한 번에 넘긴다.</li>
+    <li><b>수동 등록·수정</b> — <code>save</code>, <code>update</code>. 카테고리를 "구독"으로 바꾼 경우도 등록된다.</li>
+    <li><b>미분류 재분류 저장</b> — <code>saveAll</code></li>
+  </ul>
+
+  <h3>등록 규칙</h3>
+  <div class="step"><div class="n">1</div><div class="body"><b>대상 고르기</b>지출이면서 카테고리가 "구독"이고 금액이 0보다 큰 내역만 대상으로 한다. 수입은 제외한다.</div></div>
+  <div class="step"><div class="n">2</div><div class="body"><b>이름 정하기</b>메모에 "넷플릭스" 같은 구독 키워드가 있으면 그 키워드를 이름으로 쓴다. 월마다 메모가 조금씩 달라도 한 구독으로 묶인다. 키워드가 없으면 메모 자체를 쓴다.</div></div>
+  <div class="step"><div class="n">3</div><div class="body"><b>중복 건너뛰기</b>같은 이름이 이미 있으면(해지된 항목 포함) 새로 만들지 않는다. 기존 구독의 금액과 상태는 바꾸지 않는다.</div></div>
+  <div class="step"><div class="n">4</div><div class="body"><b>값 채우기</b>같은 이름이 여러 건이면 가장 최근 내역의 금액과 날짜(일)를 월 결제액과 결제일로 쓴다.</div></div>
+
+  <div class="callout"><strong>기존 내역은 자동 등록 대상이 아니다</strong> — 이미 저장돼 있던 내역은 새로 들어오는 데이터가 아니어서 등록되지 않는다. 그래서 정기구독 화면에 "내역에서 구독 가져오기" 버튼을 추가했다. 누르면 카테고리가 "구독"인 기존 내역을 같은 규칙으로 가져온다.</div>
+
+  <h2>캘린더에 결제 예정일 표시</h2>
+  <p>지출 분석 캘린더의 날짜 칸에 정기구독 결제일을 칩으로 표시했다. 기존 카테고리 막대와 말풍선은 그대로 두고, 금액 아래 막대 위에 칩을 추가했다.</p>
+
+  <div class="tbl"><table>
+    <tr><th>표시</th><th>의미</th></tr>
+    <tr><td>파란 칩</td><td>사용 중인 구독의 결제 예정일</td></tr>
+    <tr><td>회색 칩</td><td>이번 달에서 이미 지난 결제일</td></tr>
+    <tr><td>표시하지 않음</td><td>해지한 구독, 지난 달(결제된 기록은 내역에 있음)</td></tr>
+    <tr><td>31일 결제</td><td>그 달에 31일이 없으면 말일에 표시 (정기구독 페이지와 같은 보정 규칙)</td></tr>
+  </table></div>
+
+  <h3>화면 확인 (2026년 11월, 11/10 기준)</h3>
+  <div class="tbl"><table>
+    <tr><th>날짜</th><th>칩</th><th>색</th></tr>
+    <tr><td>6일</td><td>멜론 10,900</td><td>회색 (이미 지남)</td></tr>
+    <tr><td>11일</td><td>통신비 65,000</td><td>파랑</td></tr>
+    <tr><td>12일</td><td>KT 22,000</td><td>파랑</td></tr>
+    <tr><td>14일</td><td>넷플릭스 17,000</td><td>파랑</td></tr>
+  </table></div>
+  <p>구현은 새 DTO <code>BillDto</code>(이름, 금액, 지난 날짜 여부)를 만들고, <code>DailyChartDto</code>에 날짜별 결제 목록 <code>dayBills</code>를 추가했다. 결제일 계산은 <code>SubscriptionService.getBillsByDay</code>가 맡는다.</p>
+
+  <h2>다음 달 예상 지출</h2>
+  <p>지난 주에 정한 방법(고정/변동 분리 + 가중 이동평균)을 구현했다. 지출 분석 화면은 보고 있는 달의 다음 달을 기준으로 계산한다.</p>
+
+<pre><code>다음 달 예상 지출 = 고정지출 + 변동지출
+고정지출  = 사용 중인 정기구독 월 합계
+변동지출  = 직전 최대 3개월 변동지출의 가중평균 (가중치 3 : 2 : 1)</code></pre>
+
+  <div class="tbl"><table>
+    <tr><th>항목</th><th>계산 규칙</th></tr>
+    <tr><td>한 달의 변동지출</td><td>그 달 총지출 − 고정성 지출. 고정성 지출은 카테고리가 "구독"·"통신"이거나 메모에 사용 중인 구독 이름이 들어간 내역이다. 정기구독 합계와 이중으로 세지 않기 위해 뺀다.</td></tr>
+    <tr><td>이번 달을 포함하는 조건</td><td>7일 이상 지났을 때만 포함한다. 지금까지의 변동지출 일평균으로 말일까지 환산한다.</td></tr>
+    <tr><td>기록이 없는 달</td><td>평균에서 빼고, 남은 달 수에 맞춰 가중치를 다시 계산한다.</td></tr>
+    <tr><td>기록이 전혀 없을 때</td><td>변동지출은 0으로 보고 고정지출만 보여준다.</td></tr>
+  </table></div>
+
+  <div class="callout"><strong>지금 한계</strong> — 월세처럼 "구독"·"통신" 이외의 카테고리로 기록한 고정비는 메모에 구독 이름이 없으면 변동지출에도 포함되어 이중으로 계산될 수 있다. 지난 주에 정해둔 범위로 보여주기, 일회성 지출 제외 옵션, 백테스트는 아직 구현하지 않았다.</div>
+
+  <h2>CSV 업로드 개선</h2>
+  <p>지난 주에 "해결해야 하는 점"으로 적어둔 세 가지를 모두 처리했다. 건너뛴 줄의 수와 이유 표시, 중복 방지, 헤더 앞 안내 줄·구분자·형식 B(거래금액 하나)이다.</p>
+
+  <div class="before-after">
+    <div class="ba-box before"><span class="tag">문제</span><p>변환에 실패한 줄을 조용히 건너뛰어 원인을 알 수 없고, 같은 파일을 두 번 올리면 내역이 두 배가 된다.</p></div>
+  </div>
+
+  <div class="tbl"><table>
+    <tr><th>기능</th><th>내용</th></tr>
+    <tr><td>헤더 앞 안내 줄</td><td>위에서 50줄 안에서 "날짜 컬럼 + 금액 컬럼"이 있는 첫 줄을 헤더로 인식하고, 그 앞은 건너뛴다.</td></tr>
+    <tr><td>구분자</td><td>쉼표, 탭, 세미콜론, 파이프를 자동 판별한다. 따옴표 안의 "1,234,000"은 나누지 않는다.</td></tr>
+    <tr><td>컬럼 이름</td><td>은행·카드마다 다른 이름 후보 목록과 비교한다. <code>금액(원)</code>처럼 괄호 단위가 붙어도 인식한다.</td></tr>
+    <tr><td>날짜 형식</td><td><code>2026-09-05</code>, <code>2026.9.5</code>, <code>20260905</code>, <code>2026년 9월 5일</code>, <code>26.09.05</code>, 시간이 붙은 형태</td></tr>
+    <tr><td>금액 표기</td><td><code>31400.0</code>, <code>1,234원</code>, <code>₩5,000</code>, <code>(5,000)</code>, <code>3.5E+6</code></td></tr>
+    <tr><td>건너뜀 사유</td><td>날짜 오류, 금액 오류, 금액 0, 음수 금액 등을 "N번째 줄 - 이유"로 표시한다.</td></tr>
+  </table></div>
+
+  <h3>형식 B: 금액이 하나일 때 수입/지출을 정하는 순서</h3>
+  <div class="step"><div class="n">1</div><div class="body"><b>구분 컬럼</b>"입금", "출금" 같은 값이 있으면 그대로 따른다.</div></div>
+  <div class="step"><div class="n">2</div><div class="body"><b>카드 명세서 스타일</b>승인금액·결제금액·사용금액이면 양수는 지출, 음수(취소)는 수입으로 본다.</div></div>
+  <div class="step"><div class="n">3</div><div class="body"><b>음수가 있는 파일</b>부호가 있는 장부로 보고 음수는 지출, 양수는 수입으로 해석한다.</div></div>
+  <div class="step"><div class="n">4</div><div class="body"><b>음수가 없는 파일</b>구분할 정보가 없어서 전부 지출로 처리한다.</div></div>
+
+  <h3>중복 방지 기준</h3>
+  <ul>
+    <li>날짜, 수입/지출, 금액, 내용이 모두 같으면 같은 내역으로 본다.</li>
+    <li>같은 파일을 다시 올리면 전부 "중복 제외"로 나온다.</li>
+    <li>같은 날 같은 가게에서 4,500원을 두 번 쓴 정상 거래는, 기존 내역에 없다면 둘 다 등록된다. 기존에 한 건이 있으면 그 한 건만 중복으로 센다.</li>
+  </ul>
+
+  <div class="callout"><strong>주의</strong> — 구분 컬럼이 없고 음수도 없는 형식 B 파일은 입금도 지출로 등록된다. 이런 파일은 등록 후에 확인해야 한다.</div>
+
+  <h3>다음 주 과제</h3>
+  <li>예측 지출 범위로 표시</li>
+  <li>일회성 지출 제외 옵션 추가</li>
+  <li>카테고리별 예측 (어느 항목이 늘 것 같은지 보여줌)</li>
+</div>
+
+
+</body></html>
