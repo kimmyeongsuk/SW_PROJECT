@@ -18,12 +18,34 @@
     </p>
 
     <form th:action="@{/expenses/upload}" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".csv" required style="margin-bottom:16px;">
+        <input type="file" name="file" accept=".csv,.tsv,.txt" required style="margin-bottom:16px;">
         <br>
         <button type="submit" class="btn">업로드 및 등록</button>
     </form>
 
     <p th:if="${result}" th:text="${result}" style="color:#6B9080; font-weight:600; margin-top:12px;"></p>
+
+    <!-- 업로드 상세 결과: 등록/중복/건너뜀 -->
+    <div th:if="${importResult}" style="margin-top:10px; font-size:13px; color:#6B6456;">
+        <div>
+            등록 <b th:text="${importResult.saved()}">0</b>건 ·
+            중복 제외 <b th:text="${importResult.duplicates()}">0</b>건 ·
+            건너뜀 <b th:text="${importResult.skippedCount()}">0</b>건
+        </div>
+
+        <!-- 건너뛴 줄이 있을 때만: 몇 번째 줄이 왜 빠졌는지 -->
+        <div th:if="${importResult.skippedCount() > 0}" style="margin-top:10px;">
+            <div style="font-weight:600; margin-bottom:4px;">건너뛴 줄</div>
+            <ul style="margin:0; padding-left:18px; line-height:1.6;">
+                <li th:each="s : ${importResult.skippedRows()}">
+                    <span th:text="${s.lineNumber()} + '번째 줄 - ' + ${s.reason()}">3번째 줄 - 날짜를 읽을 수 없음</span>
+                    <div style="font-size:11.5px; color:#9C9584; word-break:break-all;" th:text="${s.raw()}">원본 줄</div>
+                </li>
+            </ul>
+            <div th:if="${importResult.skippedCount() > #lists.size(importResult.skippedRows())}"
+                 th:text="'… 외 ' + ${importResult.skippedCount() - #lists.size(importResult.skippedRows())} + '줄'"></div>
+        </div>
+    </div>
     <p th:if="${error}" th:text="${error}" class="error" style="margin-top:12px;"></p>
 </div>
 

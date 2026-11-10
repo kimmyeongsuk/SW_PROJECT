@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <title>가계부 - 홈</title>
     <link rel="stylesheet" th:href="@{/style.css}">
+    <style>
+        /* 지출 금액 옆에 작게 표시하는 다음 달 예상 지출 */
+        .summary-card .amount .forecast { font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.75); margin-left: 10px; white-space: nowrap; }
+        .summary-card .amount .forecast span { font-weight: 600; color: rgba(255,255,255,0.95); }
+    </style>
 </head>
 <body class="dashboard">
 
@@ -28,7 +33,14 @@
     <!-- 이번 달 지출/수입 요약 카드 -->
     <div class="summary-card">
         <div class="label" th:text="${todayLabel} + ' 지출'">이번 달 지출</div>
-        <div class="amount" th:text="${#numbers.formatInteger(summary.monthExpense, 0, 'COMMA')} + '원'">0원</div>
+        <div class="amount">
+            <span th:text="${#numbers.formatInteger(summary.monthExpense, 0, 'COMMA')} + '원'">0원</span>
+            <!-- 마우스를 올리면 고정/변동 내역이 툴팁으로 보임 -->
+            <span class="forecast"
+                  th:title="'고정 ' + ${#numbers.formatInteger(summary.forecast.fixed(), 0, 'COMMA')} + '원 + 변동 ' + ${#numbers.formatInteger(summary.forecast.variable(), 0, 'COMMA')} + '원'">
+                다음 달 예상 <span th:text="${#numbers.formatInteger(summary.forecast.total(), 0, 'COMMA')} + '원'">0원</span>
+            </span>
+        </div>
         <div class="sub">
             이번 달 수입 <span th:text="${#numbers.formatInteger(summary.monthIncome, 0, 'COMMA')}">0</span>원 ·
             남은 예산 <span th:text="${#numbers.formatInteger(summary.monthIncome - summary.monthExpense, 0, 'COMMA')}">0</span>원

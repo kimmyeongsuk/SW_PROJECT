@@ -4,6 +4,7 @@ import com.swproject.app.service.AiCatagotyService;
 import com.swproject.app.entity.Expense;
 import com.swproject.app.entity.ExpenseType;
 import com.swproject.app.service.ExpenseService;
+import com.swproject.app.dto.ImportResultDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -120,8 +121,9 @@ public class ExpenseController {
             return "expense/upload";
         }
         try {
-            int count = expenseService.importCsv(file);
-            model.addAttribute("result", count + "건이 등록되었습니다.");
+            ImportResultDto r = expenseService.importCsvDetailed(file);
+            model.addAttribute("result", r.saved() + "건이 등록되었습니다.");  // 기존 메시지 유지
+            model.addAttribute("importResult", r);                              // 상세 결과(중복/건너뜀)
         } catch (IOException e) {
             model.addAttribute("error", "파일을 읽는 중 문제가 발생했습니다.");
         } catch (IllegalArgumentException e) {

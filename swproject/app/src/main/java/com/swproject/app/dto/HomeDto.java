@@ -9,6 +9,7 @@ public record HomeDto(
         long monthIncome,       // 이번 달 수입
         int expenseRatio,       // 수입 대비 지출 비율 (진행 바 표시용)
         List<Expense> recent,   // 최근 내역
-        List<CategoryDto> categoryStats // 카테고리별 지출
+        List<CategoryDto> categoryStats, // 카테고리별
+        ForecastDto forecast // 다음 달 예상 지출
 ) {
 }

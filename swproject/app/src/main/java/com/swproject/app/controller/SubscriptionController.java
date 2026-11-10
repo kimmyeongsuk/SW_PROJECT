@@ -1,5 +1,6 @@
 package com.swproject.app.controller;
 
+import com.swproject.app.service.ExpenseService;
 import com.swproject.app.entity.Subscription;
 import com.swproject.app.service.SubscriptionService;
 import jakarta.validation.Valid;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
+    private final ExpenseService expenseService;
 
     // 목록 화면: GET /subscriptions
     @GetMapping
@@ -77,6 +79,13 @@ public class SubscriptionController {
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id) {
         subscriptionService.delete(id);
+        return "redirect:/subscriptions";
+    }
+
+    // 이미 저장돼 있는 "구독" 카테고리 내역을 정기구독으로 가져오기: POST /subscriptions/sync
+    @PostMapping("/sync")
+    public String syncFromExpenses() {
+        subscriptionService.registerFromExpenses(expenseService.findByCategory(SubscriptionService.AUTO_CATEGORY));
         return "redirect:/subscriptions";
     }
 }

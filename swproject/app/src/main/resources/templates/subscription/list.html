@@ -39,6 +39,10 @@
 <a class="btn" th:href="@{/}">← 홈으로</a>
 <a class="btn" th:href="@{/subscriptions/new}" style="margin-left:8px;">+ 항목 추가</a>
 
+<form th:action="@{/subscriptions/sync}" method="post" style="display:inline; margin-left:8px;">
+    <button type="submit" class="btn" title="카테고리가 '구독'인 기존 내역을 정기구독으로 가져옵니다">내역에서 구독 가져오기</button>
+</form>
+
 <div class="stat-row">
     <div class="stat-box">
         <div class="label">월 고정지출</div>

@@ -7,6 +7,8 @@ import com.swproject.app.entity.Expense;
 import com.swproject.app.entity.ExpenseType;
 import com.swproject.app.repository.ExpenseRepository;
 import com.swproject.app.dto.HomeDto;
+import com.swproject.app.dto.BillDto;
+import com.swproject.app.dto.ForecastDto;
 import com.swproject.app.dto.CategoryBarDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,9 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.web.multipart.MultipartFile;
+import com.swproject.app.dto.BillDto;
+import com.swproject.app.dto.ForecastDto;
+import com.swproject.app.dto.ImportResultDto;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -40,8 +45,9 @@ import java.nio.charset.CodingErrorAction;
 public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
+    private final SubscriptionService subscriptionService;   // (@RequiredArgsConstructor가 자동 주입)
 
-    private static final Map<String, List<String>> CATEGORY_KEYWORDS = new LinkedHashMap<>() {{
+    static final Map<String, List<String>> CATEGORY_KEYWORDS = new LinkedHashMap<>() {{
         put("식비", List.of("김밥", "국밥", "식당", "분식", "맥도날드", "버거", "배달의민족", "요기요", "쿠팡이츠", "스타벅스", "카페", "커피", "이디야", "투썸"));
         put("교통", List.of("교통비","지하철", "버스", "택시", "카카오T", "교통카드", "주유", "주차"));
         put("쇼핑", List.of("쿠팡", "올리브영", "다이소", "마트", "이마트", "홈플러스", "무신사", "지마켓"));
@@ -71,6 +77,7 @@ public class ExpenseService {
     public Long save(Expense expense) {
         //Expense 객체를 DB에 저장하고 id를 반환받음
         Expense saved = expenseRepository.save(expense);
+        subscriptionService.registerFromExpenses(List.of(saved)); //카테고리 구독이면 자동 등록
         return saved.getId();
     }
 
@@ -86,6 +93,7 @@ public class ExpenseService {
         expense.setCategory(updateData.getCategory());
         expense.setType(updateData.getType());
         expense.setMemo(updateData.getMemo());
+        subscriptionService.registerFromExpenses(List.of(expense)); //구독으로 바꾼 경우도 등록
     }
 
     //삭제
@@ -149,7 +157,8 @@ public class ExpenseService {
                 })
                 .toList(); //변환 값을 list 컬렉션으로 묶음
 
-        return new HomeDto(expense, income, ratio, recent, categoryStats);
+        return new HomeDto(expense, income, ratio, recent, categoryStats,
+                forecastMonth(thisMonth.plusMonths(1)));   // 다음 달 예상 지출
 
 
     }
@@ -247,69 +256,72 @@ public class ExpenseService {
         String nextMonth = month.plusMonths(1).toString();
         int startOffset = month.atDay(1).getDayOfWeek().getValue() % 7;
 
+        // 정기구독 결제 예정일 (날짜 칸마다 표시)
+        Map<Integer, List<BillDto>> billsByDay = subscriptionService.getBillsByDay(month);
+        List<List<BillDto>> dayBills = new java.util.ArrayList<>();
+        for (int d = 1; d <= daysInMonth; d++) {
+            dayBills.add(billsByDay.getOrDefault(d, List.of()));   // 결제 없는 날은 빈 목록
+        }
+
         return new DailyChartDto(monthLabel, days, amounts, incomes, dayBars, legendCategories,
-                total, totalIncome, average, startOffset, prevMonth, nextMonth);
+                total, totalIncome, average, startOffset, prevMonth, nextMonth,
+                dayBills, forecastMonth(month.plusMonths(1)));
     }
 
-    // 은행 명세서(CSV)를 업로드해서 지출/수입 기록을 일괄 등록
-    // 은행마다 컬럼명이 달라서, 자주 쓰이는 이름들을 후보로 두고 찾아서 매칭
+    // 기존 호출부 호환용: 등록된 건수만 돌려줌
     @Transactional
     public int importCsv(MultipartFile file) throws IOException {
+        return importCsvDetailed(file).saved();
+    }
 
-        // 은행별로 다른 컬럼명 후보들 (여기 없는 은행이면 이 리스트에 이름만 추가하면 됨)
-        List<String> dateCols = List.of("거래일시", "거래일자", "이용일자", "날짜");
-        List<String> withdrawCols = List.of("출금액", "출금", "이용금액");
-        List<String> depositCols = List.of("입금액", "입금");
-        List<String> descCols = List.of("적요", "내용", "가맹점명", "거래내용", "메모");
+    // 은행/카드 명세서 CSV를 읽어 등록하고, 등록/중복/건너뜀 결과를 돌려줌
+    @Transactional
+    public ImportResultDto importCsvDetailed(MultipartFile file) throws IOException {
 
-        int savedCount = 0;
-
-        // 인코딩을 자동으로 감지해서 문자열로 변환
+        // 1) 인코딩 자동 감지(기존 decodeCsv 그대로) --> 헤더/구분자/형식 자동 판별 파싱
         String text = decodeCsv(file.getBytes());
+        CsvStatementParser.Result parsed = CsvStatementParser.parse(text);
 
-        try (CSVParser parser = CSVFormat.DEFAULT.builder()
-                .setHeader()
-                .setSkipHeaderRecord(true)
-                .setIgnoreHeaderCase(true)
-                .setTrim(true)
-                .build()
-                .parse(new StringReader(text))) {
-
-            // 실제 파일의 헤더 중에서, 위 후보 이름과 일치하는 걸 찾아 실제 컬럼명 확정
-            var headers = parser.getHeaderMap().keySet();
-            String dateCol = findMatchingColumn(headers, dateCols);
-            String withdrawCol = findMatchingColumn(headers, withdrawCols);
-            String depositCol = findMatchingColumn(headers, depositCols);
-            String descCol = findMatchingColumn(headers, descCols);
-
-            if (dateCol == null) {
-                throw new IllegalArgumentException("날짜 컬럼을 찾을 수 없습니다. CSV 헤더를 확인해주세요.");
-            }
-
-            for (CSVRecord row : parser) {
-                LocalDate date = parseFlexibleDate(row.get(dateCol));
-                if (date == null) continue; // 날짜를 못 읽으면 그 줄은 건너뜀
-
-                String desc = (descCol != null) ? row.get(descCol) : "";
-
-                // 출금액이 있으면 지출로 등록
-                if (withdrawCol != null) {
-                    long amount = parseAmount(row.get(withdrawCol));
-                    if (amount > 0) {
-                        savedCount += saveImportedRow(date, amount, ExpenseType.EXPENSE, desc);
-                    }
-                }
-                // 입금액이 있으면 수입으로 등록
-                if (depositCol != null) {
-                    long amount = parseAmount(row.get(depositCol));
-                    if (amount > 0) {
-                        savedCount += saveImportedRow(date, amount, ExpenseType.INCOME, desc);
-                    }
-                }
+        // 2) 중복 방지: 파일의 날짜 범위에 해당하는 기존 내역을 "키 --> 개수"로 모아둠
+        //    키 = 날짜 + 수입/지출 + 금액 + 내용
+        Map<String, Integer> existing = new HashMap<>();
+        if (!parsed.rows().isEmpty()) {
+            LocalDate min = parsed.rows().stream().map(CsvStatementParser.Row::date).min(LocalDate::compareTo).get();
+            LocalDate max = parsed.rows().stream().map(CsvStatementParser.Row::date).max(LocalDate::compareTo).get();
+            for (Expense e : expenseRepository.findByExpenseDateBetweenOrderByExpenseDateAsc(min, max)) {
+                existing.merge(dupKey(e.getExpenseDate(), e.getType(), e.getAmount(), e.getMemo()), 1, Integer::sum);
             }
         }
 
-        return savedCount;
+        int saved = 0;
+        int duplicates = 0;
+        List<Expense> importedExpenses = new java.util.ArrayList<>(); // 구독 자동 등록용
+
+        for (CsvStatementParser.Row r : parsed.rows()) {
+            String key = dupKey(r.date(), r.type(), r.amount(), r.desc());
+            int left = existing.getOrDefault(key, 0);
+            if (left > 0) {
+                // 이미 있는 내역 --> 하나 소진시키고 건너뜀
+                // (같은 파일 안에 똑같은 거래가 2건이면, DB에 이미 2건 있을 때만 둘 다 중복 처리됨)
+                existing.put(key, left - 1);
+                duplicates++;
+                continue;
+            }
+            saved += saveImportedRow(r.date(), r.amount(), r.type(), r.desc(), importedExpenses);
+        }
+
+        // 업로드한 내역 중 카테고리가 "구독"인 것을 정기구독에 자동 등록 (기존 기능 유지)
+        subscriptionService.registerFromExpenses(importedExpenses);
+
+        // 3) 건너뛴 줄: 화면에는 최대 100줄까지만, 전체 개수는 따로 전달
+        List<ImportResultDto.SkippedRow> skipped = parsed.skipped();
+        List<ImportResultDto.SkippedRow> shown = skipped.size() <= 100 ? skipped : skipped.subList(0, 100);
+        return new ImportResultDto(saved, duplicates, skipped.size(), shown);
+    }
+
+    // 중복 판별용 키
+    private String dupKey(LocalDate date, ExpenseType type, long amount, String memo) {
+        return date + "|" + type + "|" + amount + "|" + (memo == null ? "" : memo.trim());
     }
 
     // 파일 바이트를 보고 인코딩을 추정해서 문자열로 변환
@@ -345,7 +357,7 @@ public class ExpenseService {
         }
     }
 
-    private int saveImportedRow(LocalDate date, long amount, ExpenseType type, String desc) {
+    private int saveImportedRow(LocalDate date, long amount, ExpenseType type, String desc, List<Expense> collector) {
         Expense expense = new Expense();
         expense.setExpenseDate(date);
         expense.setAmount(amount);
@@ -353,6 +365,7 @@ public class ExpenseService {
         expense.setCategory(inferCategory(desc)); // 적요 기반으로 카테고리 자동 추정, 실패시 "미분류"
         expense.setMemo(desc);
         expenseRepository.save(expense);
+        collector.add(expense);
         return 1;
     }
 
@@ -417,5 +430,77 @@ public class ExpenseService {
     @Transactional
     public void saveAll(List<Expense> expenses) {
         expenseRepository.saveAll(expenses);
+        subscriptionService.registerFromExpenses(expenses);
+    }
+    // ---------------------------------------------------------------
+    // 다음 달 예상 지출 = 고정 지출 + 변동 지출
+    //  - 고정 지출: 사용 중인 정기구독 월 합계
+    //  - 변동 지출: 최근 최대 3개월의 변동 지출(총지출 - 고정성 지출)을 가중 이동평균
+    //               (최근 달일수록 가중치가 큼)
+    // ---------------------------------------------------------------
+
+    private static final int[] WMA_WEIGHTS = {3, 2, 1};           // 가장 최근 달 --> 오래된 달
+    private static final int MIN_DAYS_FOR_CURRENT_MONTH = 7;       // 이번 달은 7일 이상 지나야 예측에 사용
+    // 정기구독으로 따로 계산하는 카테고리: 변동 지출에서 제외 (이중 계산 방지)
+    private static final java.util.Set<String> FIXED_CATEGORIES = java.util.Set.of("구독", "통신");
+
+    @Transactional(readOnly = true)
+    public ForecastDto forecastMonth(YearMonth target) {
+        long fixed = subscriptionService.getActiveMonthlyTotal();   // 고정 = 정기구독 합계
+        long variable = weightedVariable(target);                   // 변동 = 가중 이동평균
+        return new ForecastDto(fixed, variable, fixed + variable);
+    }
+
+    private long weightedVariable(YearMonth target) {
+        LocalDate today = LocalDate.now();
+        YearMonth nowMonth = YearMonth.from(today);
+        List<String> subNames = subscriptionService.getActiveNames();
+
+        double weightedSum = 0;
+        double weightTotal = 0;
+        int used = 0;   // 실제로 사용한 달 수 (가중치 순서 결정)
+
+        // target 직전 3개월을 가까운 달부터 확인
+        for (int i = 1; i <= WMA_WEIGHTS.length; i++) {
+            YearMonth m = target.minusMonths(i);
+            if (m.isAfter(nowMonth)) continue;   // 아직 시작 안 한 달은 데이터 없음
+
+            boolean partial = m.equals(nowMonth);   // 아직 끝나지 않은 이번 달
+            if (partial && today.getDayOfMonth() < MIN_DAYS_FOR_CURRENT_MONTH) continue; // 초반엔 너무 부정확
+
+            long total = 0;
+            long fixedPart = 0;
+            for (Expense e : expenseRepository.findByExpenseDateBetweenOrderByExpenseDateAsc(
+                    m.atDay(1), partial ? today : m.atEndOfMonth())) {
+                if (e.getType() != ExpenseType.EXPENSE) continue;
+                total += e.getAmount();
+                if (isFixedExpense(e, subNames)) fixedPart += e.getAmount();
+            }
+            if (total == 0) continue;   // 기록 없는 달은 평균에 넣지 않음
+
+            double monthVariable = total - fixedPart;   // 그 달의 변동 지출
+            if (partial) {
+                // 이번 달은 지금까지의 일평균으로 말일까지 환산
+                monthVariable = monthVariable / today.getDayOfMonth() * m.lengthOfMonth();
+            }
+
+            int w = WMA_WEIGHTS[used];   // 사용 가능한 달 중 가장 최근부터 큰 가중치
+            weightedSum += monthVariable * w;
+            weightTotal += w;
+            used++;
+        }
+
+        return weightTotal == 0 ? 0 : Math.round(weightedSum / weightTotal);
+    }
+
+    // 고정성 지출인가? (카테고리가 구독/통신이거나, 메모에 사용 중인 구독 이름이 들어 있음)
+    private boolean isFixedExpense(Expense e, List<String> subNames) {
+        if (FIXED_CATEGORIES.contains(e.getCategory())) return true;
+        String memo = e.getMemo();
+        if (memo == null || memo.isBlank()) return false;
+        for (String name : subNames) {
+            if (!name.isBlank() && memo.contains(name)) return true;
+        }
+        return false;
     }
 }
