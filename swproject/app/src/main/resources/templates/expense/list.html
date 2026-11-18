@@ -37,7 +37,10 @@
         </td>
         <td th:text="${expense.category}">카테고리</td>
         <td th:text="${#numbers.formatInteger(expense.amount, 0, 'COMMA')} + '원'">0원</td>
-        <td th:text="${expense.memo}">메모</td>
+        <td th:text="${expense.memo}">
+            <span th:text="${expense.memo}">메모</span>
+            <span th:if="${expense.oneOff}" style="font-size:11px; padding:2px 8px; border-radius:10px; background:#F0ECDF; color:#6B6456; margin-left:6px;">일회성</span>
+        </td>
         <td class="actions">
             <a th:href="@{/expenses/{id}/edit(id=${expense.id})}">수정</a>
             <form th:action="@{/expenses/{id}/delete(id=${expense.id})}" method="post" style="display:inline;">

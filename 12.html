@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12주차 과제</title>
+<style>
+  :root{
+    --ink:#1B2A41; --paper:#FAF7EF; --card:#FFFFFF; --line:#E4DECE; --green:#2F5233;
+    --amber:#B8791A; --muted:#6B6456; --th-bg:#F0ECDF; --inline-bg:#EFE9D8;
+    --code-bg:#16233A; --code-fg:#F4F1E6;
+    --bad-bg:#F3E4DD; --bad-fg:#B8593C; --good-bg:#DEE8DA; --good-fg:#2F5233;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:#E6E9EF; --paper:#14181F; --card:#1C222C; --line:#2E3644; --green:#8DC495;
+      --amber:#E0A64A; --muted:#A5A092; --th-bg:#232B37; --inline-bg:#2A3140;
+      --code-bg:#0C111A; --code-fg:#F4F1E6;
+      --bad-bg:#3B2822; --bad-fg:#F0967A; --good-bg:#233326; --good-fg:#8DC495;
+    }
+  }
+  * { box-sizing: border-box; }
+  body{
+    margin:0;
+    font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    background: var(--paper); color: var(--ink); line-height: 1.7;
+  }
+  .wrap{ max-width: 760px; margin: 0 auto; padding: 8vh 6vw 12vh; }
+  .eyebrow{ font-family: 'Courier New', monospace; font-size: 12.5px; color: var(--muted); margin-bottom: 14px; letter-spacing: .02em; }
+  h1{ font-size: 32px; font-weight: 700; margin: 0 0 10px; line-height:1.3; }
+  .subtitle{ font-size: 16px; color: var(--muted); margin-bottom: 40px; }
+  h2{ font-size: 22px; font-weight: 700; margin: 48px 0 14px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--ink); }
+  h3{ font-size: 16.5px; font-weight: 700; margin: 26px 0 10px; }
+  p{ font-size: 15px; margin: 0 0 14px; }
+  ul, ol{ font-size: 15px; margin: 0 0 16px; padding-left: 22px; }
+  li{ margin-bottom: 6px; }
+  a{ color: var(--green); }
+  .callout{ background:var(--card); border:1px solid var(--line); border-left:3px solid var(--amber); border-radius:8px; padding:14px 18px; font-size:14px; color:var(--muted); margin:18px 0; }
+  .callout strong{ color: var(--ink); }
+  .tbl{ overflow-x:auto; margin: 16px 0 24px; }
+  table{ width:100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td{ text-align:left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th{ background: var(--th-bg); font-weight: 700; font-size: 12px; color: var(--muted); }
+  pre{ background: var(--code-bg); color: var(--code-fg); padding: 18px 20px; border-radius: 10px; overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 16px 0 22px; }
+  code{ font-family: 'Courier New', monospace; }
+  p code, li code, td code{ background:var(--inline-bg); padding:1px 6px; border-radius:4px; font-size:13px; color:var(--amber); }
+  .step{ display:flex; gap:14px; margin-bottom:18px; }
+  .step .n{ flex-shrink:0; width:26px; height:26px; border-radius:50%; background:var(--green); color:var(--paper); font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .step .body{ font-size:14.5px; padding-top:2px; min-width:0; }
+  .step .body b{ display:block; font-size:15px; margin-bottom:2px; }
+  .before-after{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0 24px; }
+  .ba-box{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; min-width:0; }
+  .ba-box .tag{ font-size:11px; font-weight:700; letter-spacing:.03em; margin-bottom:8px; display:inline-block; padding:2px 8px; border-radius:10px; }
+  .ba-box.before .tag{ background:var(--bad-bg); color:var(--bad-fg); }
+  .ba-box.after .tag{ background:var(--good-bg); color:var(--good-fg); }
+  .ba-box p{ font-size:13.5px; margin:0; }
+  @media (max-width: 600px){ .before-after{ grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">지출 예측 가계부 · 구현 기록</div>
+  <h1>12주차 과제</h1>
+  <p class="subtitle">연말정산 미리보기 계획부터, 다음 달 예측의 범위 표시·일회성 지출 제외·카테고리별 예측 구현</p>
+
+  <p>연말정산 기능을 어떤 방식으로 넣을지 먼저 정리하고, 지난 주에 만든 다음 달 예상 지출을 숫자 하나가 아니라 범위로 보여주고, 큰 일회성 지출의 영향을 줄이고, 어느 항목이 늘 것 같은지 보여주도록 확장했다.</p>
+
+  <div class="tbl"><table>
+    <tr><th>기능</th><th>상태</th><th>내용</th></tr>
+    <tr><td>예측 범위 표시</td><td>구현</td><td>"약 30만~37만 원"처럼 최근 달들의 최소~최대를 함께 표시</td></tr>
+    <tr><td>일회성 지출 제외</td><td>구현</td><td>내역마다 "일회성" 체크 칸을 두고, 체크한 내역은 예측에서 제외</td></tr>
+    <tr><td>카테고리별 예측</td><td>구현</td><td>카테고리마다 다음 달 예상 금액과 지난달 대비 증감 표시, 늘 것 같은 항목 강조</td></tr>
+  </table></div>
+
+  <h2>연말정산 미리보기 (계획)</h2>
+  <p>가계부 데이터로 가장 정확하게 계산할 수 있는 신용카드·체크카드 소득공제를 "미리보기"로 보여주는 방향이다. 실제 신고 금액은 국세청 간소화 서비스 자료로 확정해야 하므로 화면에는 참고용이라고 표시한다. 이번 주에는 구현하지 않고 방식만 정리했다.</p>
+  <ul>
+    <li><b>확인한 기준</b> — 2026년 귀속(2027년 연말정산)부터 카드 소득공제 기본 한도가 자녀 수에 따라 늘었다. 총급여 7,000만 원 이하는 300만 / 350만 / 400만 원(자녀 없음 / 1명 / 2명 이상), 초과는 250만 / 275만 / 300만 원이다. 최저사용금액(총급여의 25%)과 카드 종류별 공제율은 확인하지 못해서 설정값으로 두고, 국세청 안내로 확인한 뒤 넣는다.</li>
+    <li><b>핵심 문제</b> — 은행 거래내역에는 신용/체크 구분이 없고, 신용카드는 결제대금 한 줄만 찍힌다. 계좌 내역과 카드 명세서를 둘 다 올리면 지출이 이중으로 잡히므로, 결제수단 구분과 카드대금 제외가 먼저 필요하다.</li>
+    <li><b>구현 순서</b> — 결제수단 필드와 업로드 화면 선택 칸 → 카드대금 감지 → 총급여·자녀 수 저장과 공제액 계산 → 연말 전망(예측 기능 연계) → <code>/tax</code> 화면.</li>
+  </ul>
+
+  <h2>다음 달 예측 기능 추가</h2>
+  <p>연말정산 계획과 별개로, 지난 주에 만든 다음 달 예상 지출을 아래 세 가지로 확장했다. 모두 기존 화면과 데이터는 그대로 두고 추가했다.</p>
+
+  <h2>예측을 범위로 표시</h2>
+  <p>예측값 하나만 보여주면 얼마나 믿어야 하는지 알 수 없다. 그래서 예측에 쓴 최근 달들의 변동지출 중 가장 적었던 달과 가장 많았던 달을 범위로 같이 보여준다.</p>
+
+<pre><code>범위 아래쪽 = 고정지출 + 최근 달 중 가장 적었던 변동지출
+범위 위쪽   = 고정지출 + 최근 달 중 가장 많았던 변동지출</code></pre>
+
+  <ul>
+    <li>가중 평균은 항상 최소와 최대 사이에 있어서 예측값이 범위 밖으로 나가지 않는다.</li>
+    <li>범위 끝은 천 원 단위로 내림/올림해서 표시한다.</li>
+    <li>최근 달이 한 달뿐이면 최소와 최대가 같아 범위가 의미 없으므로 숨기고 예측값만 보여준다.</li>
+  </ul>
+
+  <h2>일회성 지출 제외 옵션</h2>
+  <div class="before-after">
+    <div class="ba-box before"><span class="tag">문제</span><p>여행이나 경조사처럼 한 번 크게 쓴 지출이 평균에 들어가면 다음 달 예측이 크게 부풀고 범위도 넓어진다.</p></div>
+    <div class="ba-box after"><span class="tag">해결</span><p>내역에 "일회성" 표시를 하면 그 내역은 예측에서 항상 빠진다. 몇 건, 얼마를 뺐는지는 화면에 보여준다.</p></div>
+  </div>
+
+  <ul>
+    <li>내역 등록·수정 폼에 체크 칸을 넣고, 목록에는 "일회성" 배지를 표시한다.</li>
+    <li>CSV로 가져온 내역은 기본이 "일회성 아님"이다. 큰 금액은 목록에서 수정해서 표시한다.</li>
+  </ul>
+
+  <h3>효과 비교 (같은 데이터, 10월의 여행 80만 원)</h3>
+  <div class="tbl"><table>
+    <tr><th>구분</th><th>변동지출 예측</th><th>범위</th></tr>
+    <tr><td>일회성 표시함</td><td>354,167원</td><td>300,000 ~ 375,000원</td></tr>
+    <tr><td>일회성 표시 안 함</td><td>620,833원</td><td>300,000 ~ 1,150,000원</td></tr>
+  </table></div>
+
+  <h2>카테고리별 예측</h2>
+  <p>어느 항목이 늘 것 같은지 보이도록, 변동지출을 카테고리별로 나눠서 같은 방식(최근 3개월 가중 평균 3:2:1)으로 예측한다.</p>
+
+  <div class="step"><div class="n">1</div><div class="body"><b>카테고리마다 가중 평균</b>어떤 달에 없던 카테고리는 그 달 0원으로 계산한다.</div></div>
+  <div class="step"><div class="n">2</div><div class="body"><b>합계가 항상 일치</b>변동지출 합계를 카테고리 예측의 합으로 정의해서, 표를 더한 값과 위쪽의 예상 지출이 어긋나지 않는다.</div></div>
+  <div class="step"><div class="n">3</div><div class="body"><b>지난달과 비교</b>예상 금액에서 직전에 끝난 달의 실제 금액을 빼서 증감을 구한다.</div></div>
+  <div class="step"><div class="n">4</div><div class="body"><b>"늘 것 같음" 표시</b>지난달보다 10,000원 이상, 10% 이상 늘 것으로 보이는 항목에 표시한다. 지난달에 0원이었던 항목은 금액 조건만 본다.</div></div>
+
+  <h2>한계와 다음 과제</h2>
+  <ul>
+    <li>일회성 표시는 사람이 직접 해야 한다. 평균보다 훨씬 큰 금액을 "일회성 후보"로 제안하는 기능이 필요하다.</li>
+    <li>카테고리별 증감은 지난달 한 달과의 비교라서 한 달의 우연한 변동에 영향을 받는다.</li>
+    <li>미분류 일괄 분류 화면과 분류 규칙 저장을 구현한다.</li>
+    <li>연말정산은 결제수단 필드와 카드대금 감지부터 구현하고, 공제 문턱·공제율을 확인한다.</li>
+  </ul>
+
+</div>
+</body>
+</html>

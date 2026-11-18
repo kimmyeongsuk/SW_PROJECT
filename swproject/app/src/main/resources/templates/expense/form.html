@@ -35,6 +35,12 @@
     <label for="memo">메모 (선택)</label>
     <input type="text" id="memo" th:field="*{memo}" placeholder="예: 친구랑 점심">
 
+      <!-- 일회성 지출: 체크하면 다음 달 예측에서 제외 -->
+      <label for="oneOff" style="display:flex; gap:8px; align-items:center; margin-top:14px;">
+          <input type="checkbox" id="oneOff" th:field="*{oneOff}" style="width:auto;">
+          일회성 지출 (여행·경조사 등, 다음 달 예측에서 제외)
+      </label>
+
     <button type="submit" class="btn" style="margin-top:20px;">저장</button>
 
     <a th:href="@{/expenses}" style="margin-left:10px; font-size:13px; color:#6B6456;">취소</a>

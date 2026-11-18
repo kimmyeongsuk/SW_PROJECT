@@ -39,6 +39,8 @@
             <span class="forecast"
                   th:title="'고정 ' + ${#numbers.formatInteger(summary.forecast.fixed(), 0, 'COMMA')} + '원 + 변동 ' + ${#numbers.formatInteger(summary.forecast.variable(), 0, 'COMMA')} + '원'">
                 다음 달 예상 <span th:text="${#numbers.formatInteger(summary.forecast.total(), 0, 'COMMA')} + '원'">0원</span>
+                <span th:if="${summary.forecast.hasRange()}"
+                      th:text="' (약 ' + ${#numbers.formatInteger(summary.forecast.totalLow(), 0, 'COMMA')} + '~' + ${#numbers.formatInteger(summary.forecast.totalHigh(), 0, 'COMMA')} + '원)'"></span>
             </span>
         </div>
         <div class="sub">

@@ -48,10 +48,10 @@ public class ExpenseService {
     private final SubscriptionService subscriptionService;   // (@RequiredArgsConstructor가 자동 주입)
 
     static final Map<String, List<String>> CATEGORY_KEYWORDS = new LinkedHashMap<>() {{
-        put("식비", List.of("김밥", "국밥", "식당", "분식", "맥도날드", "버거", "배달의민족", "요기요", "쿠팡이츠", "스타벅스", "카페", "커피", "이디야", "투썸"));
+        put("식비", List.of("주말 외식","가족 외식","김밥", "국밥", "식당", "분식", "맥도날드", "버거", "배달의민족", "요기요", "쿠팡이츠", "스타벅스", "카페", "커피", "이디야", "투썸"));
         put("교통", List.of("교통비","지하철", "버스", "택시", "카카오T", "교통카드", "주유", "주차"));
-        put("쇼핑", List.of("쿠팡", "올리브영", "다이소", "마트", "이마트", "홈플러스", "무신사", "지마켓"));
-        put("구독", List.of("넷플릭스", "유튜브", "왓챠", "멜론", "지니뮤직", "디즈니", "티빙", "웨이브", "클라우드","통신비", "SKT", "KT", "LG U+", "알뜰폰"));
+        put("쇼핑", List.of("편의점","쿠팡", "올리브영", "다이소", "마트", "이마트", "홈플러스", "무신사", "지마켓"));
+        put("구독", List.of("관리비","넷플릭스", "유튜브", "왓챠", "멜론", "지니뮤직", "디즈니", "티빙", "웨이브", "클라우드","통신비", "SKT", "KT", "LG U+", "알뜰폰"));
         put("문화/여가", List.of("영화관", "CGV", "롯데시네마", "메가박스", "공연", "전시"));
         put("의료/건강", List.of("약국", "병원", "의원", "한의원"));
     }};
@@ -93,6 +93,7 @@ public class ExpenseService {
         expense.setCategory(updateData.getCategory());
         expense.setType(updateData.getType());
         expense.setMemo(updateData.getMemo());
+        expense.setOneOff(updateData.getOneOff());
         subscriptionService.registerFromExpenses(List.of(expense)); //구독으로 바꾼 경우도 등록
     }
 
@@ -447,8 +448,29 @@ public class ExpenseService {
     @Transactional(readOnly = true)
     public ForecastDto forecastMonth(YearMonth target) {
         long fixed = subscriptionService.getActiveMonthlyTotal();   // 고정 = 정기구독 합계
-        long variable = weightedVariable(target);                   // 변동 = 가중 이동평균
-        return new ForecastDto(fixed, variable, fixed + variable);
+        LocalDate today = LocalDate.now();
+
+        // 예측에 쓸 기간: target 직전 3개월 시작일 ~ (target 직전 달 말일, 단 오늘까지)
+        // 한 번에 조회해서 계산기에 넘김 (예전처럼 달마다 조회하지 않음)
+        LocalDate from = target.minusMonths(3).atDay(1);
+        LocalDate to = target.minusMonths(1).atEndOfMonth();
+        if (to.isAfter(today)) to = today;
+
+        List<ForecastCalculator.Tx> txs = new java.util.ArrayList<>();
+        if (!from.isAfter(to)) {
+            for (Expense e : expenseRepository.findByExpenseDateBetweenOrderByExpenseDateAsc(from, to)) {
+                txs.add(new ForecastCalculator.Tx(
+                        e.getExpenseDate(), e.getType(), e.getAmount(), e.getCategory(), e.getMemo(),
+                        Boolean.TRUE.equals(e.getOneOff())));   // null 은 일회성 아님
+            }
+        }
+
+        ForecastCalculator.Result r = ForecastCalculator.calculate(
+                target, today, txs, FIXED_CATEGORIES, subscriptionService.getActiveNames());
+
+        return new ForecastDto(fixed, r.variable(), fixed + r.variable(),
+                fixed + r.low(), fixed + r.high(),          // 범위 = 고정 + 변동의 최소~최대
+                r.categories(), r.oneOffCount(), r.oneOffAmount());
     }
 
     private long weightedVariable(YearMonth target) {

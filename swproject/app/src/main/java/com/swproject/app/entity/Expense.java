@@ -39,6 +39,11 @@ public class Expense {
     @Column(length = 255)
     private String memo;
 
+    // 일회성 지출 여부 (여행, 경조사처럼 반복되지 않는 큰 지출). true면 다음 달 예측에서 제외
+    // null = 기존 데이터 (일회성 아님)
+    @Column(name = "one_off")
+    private Boolean oneOff;
+
     @Column(name = "created_at", updatable = false) //등록 시간 수정 시  변경 보호
     private LocalDateTime createdAt;
 
