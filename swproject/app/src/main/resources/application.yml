@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/swproject?createDatabaseIfNotExist=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root
-    password: 1234
+    password: {password}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -30,4 +30,4 @@ spring:
 
 app:
   ai:
-    api-key: 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
+    api-key: ${API_KEY}
