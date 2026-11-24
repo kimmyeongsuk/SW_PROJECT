@@ -34,7 +34,11 @@
 
     <label for="memo">메모 (선택)</label>
     <input type="text" id="memo" th:field="*{memo}" placeholder="예: 친구랑 점심">
-
+      <label>결제수단
+          <select th:field="*{paymentMethod}">
+              <option th:each="pm : ${paymentMethods}" th:value="${pm}" th:text="${pm.label}"></option>
+          </select>
+      </label>
       <!-- 일회성 지출: 체크하면 다음 달 예측에서 제외 -->
       <label for="oneOff" style="display:flex; gap:8px; align-items:center; margin-top:14px;">
           <input type="checkbox" id="oneOff" th:field="*{oneOff}" style="width:auto;">

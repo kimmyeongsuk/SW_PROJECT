@@ -5,6 +5,7 @@ import com.swproject.app.dto.HomeDto;
 import com.swproject.app.dto.DailyChartDto;
 import com.swproject.app.entity.Expense;
 import com.swproject.app.entity.ExpenseType;
+import com.swproject.app.entity.PaymentMethod;
 import com.swproject.app.repository.ExpenseRepository;
 import com.swproject.app.dto.HomeDto;
 import com.swproject.app.dto.BillDto;
@@ -94,6 +95,7 @@ public class ExpenseService {
         expense.setType(updateData.getType());
         expense.setMemo(updateData.getMemo());
         expense.setOneOff(updateData.getOneOff());
+        expense.setPaymentMethod(updateData.getPaymentMethod());  // 수정: 변수명 맞춤 (결제수단도 수정 가능)
         subscriptionService.registerFromExpenses(List.of(expense)); //구독으로 바꾼 경우도 등록
     }
 
@@ -272,12 +274,12 @@ public class ExpenseService {
     // 기존 호출부 호환용: 등록된 건수만 돌려줌
     @Transactional
     public int importCsv(MultipartFile file) throws IOException {
-        return importCsvDetailed(file).saved();
+        return importCsvDetailed(file, null).saved();   // 수정: 결제수단 없이 호출하면 미지정으로 저장
     }
 
     // 은행/카드 명세서 CSV를 읽어 등록하고, 등록/중복/건너뜀 결과를 돌려줌
     @Transactional
-    public ImportResultDto importCsvDetailed(MultipartFile file) throws IOException {
+    public ImportResultDto importCsvDetailed(MultipartFile file, PaymentMethod method) throws IOException {
 
         // 1) 인코딩 자동 감지(기존 decodeCsv 그대로) --> 헤더/구분자/형식 자동 판별 파싱
         String text = decodeCsv(file.getBytes());
@@ -308,7 +310,7 @@ public class ExpenseService {
                 duplicates++;
                 continue;
             }
-            saved += saveImportedRow(r.date(), r.amount(), r.type(), r.desc(), importedExpenses);
+            saved += saveImportedRow(r.date(), r.amount(), r.type(), r.desc(), importedExpenses, method);
         }
 
         // 업로드한 내역 중 카테고리가 "구독"인 것을 정기구독에 자동 등록 (기존 기능 유지)
@@ -358,18 +360,22 @@ public class ExpenseService {
         }
     }
 
-    private int saveImportedRow(LocalDate date, long amount, ExpenseType type, String desc, List<Expense> collector) {
+    // 업로드한 한 줄을 Expense 로 저장. method 는 업로드 화면에서 고른 결제수단
+    private int saveImportedRow(LocalDate date, long amount, ExpenseType type, String desc,
+                                List<Expense> collector, PaymentMethod method) {   // 수정: method 파라미터 추가
         Expense expense = new Expense();
         expense.setExpenseDate(date);
         expense.setAmount(amount);
         expense.setType(type);
         expense.setCategory(inferCategory(desc)); // 적요 기반으로 카테고리 자동 추정, 실패시 "미분류"
         expense.setMemo(desc);
+        if (type == ExpenseType.EXPENSE) {        // 추가: 수입에는 결제수단을 지정하지 않음
+            expense.setPaymentMethod(method == null ? PaymentMethod.UNSPECIFIED : method);
+        }
         expenseRepository.save(expense);
         collector.add(expense);
         return 1;
     }
-
     // 후보 이름 목록 중 실제 CSV 헤더에 있는 걸 찾아서 반환 (없으면 null)
     private String findMatchingColumn(java.util.Set<String> headers, List<String> candidates) {
         for (String candidate : candidates) {

@@ -11,6 +11,8 @@ import java.util.List;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
+
+    List<Expense> findByExpenseDateBetween(LocalDate from, LocalDate to);
     //최신순 전체 조회 (목록)
     //날짜 기준 최신순으로 가져옴
     List<Expense> findAllByOrderByExpenseDateDesc();

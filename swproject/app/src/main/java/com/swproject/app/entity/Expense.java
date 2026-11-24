@@ -39,6 +39,11 @@ public class Expense {
     @Column(length = 255)
     private String memo;
 
+    // 결제수단 (null이면 미지정으로 취급). ddl-auto: update 이므로 컬럼이 자동 추가됨
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", length = 20)
+    private PaymentMethod paymentMethod;
+
     // 일회성 지출 여부 (여행, 경조사처럼 반복되지 않는 큰 지출). true면 다음 달 예측에서 제외
     // null = 기존 데이터 (일회성 아님)
     @Column(name = "one_off")

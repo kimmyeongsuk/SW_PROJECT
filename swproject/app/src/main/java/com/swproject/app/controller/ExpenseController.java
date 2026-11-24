@@ -5,6 +5,8 @@ import com.swproject.app.entity.Expense;
 import com.swproject.app.entity.ExpenseType;
 import com.swproject.app.service.ExpenseService;
 import com.swproject.app.dto.ImportResultDto;
+import com.swproject.app.entity.PaymentMethod;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -42,6 +44,7 @@ public class ExpenseController {
 
         model.addAttribute("expense", new Expense());
         model.addAttribute("types", ExpenseType.values());
+        model.addAttribute("paymentMethods", PaymentMethod.values());  // 폼의 결제수단 select용
         return "expense/form";
         //from.html 폼과 연결해 입력한 값이 객체에 채워짐
         //enum(INCOME,EXPENSE)의 모든 값을 배열로 전달, 옵션 목록을 만듦
@@ -57,6 +60,7 @@ public class ExpenseController {
         //통과 시 실제 DB에 저장
         if (bindingResult.hasErrors()) {
             model.addAttribute("types", ExpenseType.values());
+            model.addAttribute("paymentMethods", PaymentMethod.values());  // 폼의 결제수단 select용
             return "expense/form";
         }
         expenseService.save(expense);
@@ -69,6 +73,7 @@ public class ExpenseController {
     public String updateForm(@PathVariable Long id, Model model) {
         model.addAttribute("expense", expenseService.findById(id));
         model.addAttribute("types", ExpenseType.values());
+        model.addAttribute("paymentMethods", PaymentMethod.values());  // 폼의 결제수단 select용
         return "expense/form";
         // id의 기존 데이터를 DB 조회 후 Model에 담음
     }
@@ -81,6 +86,7 @@ public class ExpenseController {
                          Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("types", ExpenseType.values());
+            model.addAttribute("paymentMethods", PaymentMethod.values());  // 폼의 결제수단 select용
             return "expense/form";
         }
         //등록 기능과 다르게 기존 id 찾아 값만 update 함.
@@ -115,13 +121,15 @@ public class ExpenseController {
 
     // 업로드 처리: POST /expenses/upload
     @PostMapping("/upload")
-    public String upload(@RequestParam("file") MultipartFile file, Model model) {
+    public String upload(@RequestParam("file") MultipartFile file,
+                         @RequestParam(value = "paymentMethod", required = false) PaymentMethod paymentMethod
+                         ,Model model) {
         if (file.isEmpty()) {
             model.addAttribute("error", "파일을 선택해주세요.");
             return "expense/upload";
         }
         try {
-            ImportResultDto r = expenseService.importCsvDetailed(file);
+            ImportResultDto r = expenseService.importCsvDetailed(file, paymentMethod);
             model.addAttribute("result", r.saved() + "건이 등록되었습니다.");  // 기존 메시지 유지
             model.addAttribute("importResult", r);                              // 상세 결과(중복/건너뜀)
         } catch (IOException e) {

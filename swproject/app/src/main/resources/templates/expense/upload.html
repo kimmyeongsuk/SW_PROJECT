@@ -20,6 +20,15 @@
     <form th:action="@{/expenses/upload}" method="post" enctype="multipart/form-data">
         <input type="file" name="file" accept=".csv,.tsv,.txt" required style="margin-bottom:16px;">
         <br>
+        <!-- 이 파일 전체에 적용할 결제수단 (카드 명세서면 신용/체크 선택) -->
+        <label style="font-size:13px;">이 파일의 결제수단
+            <select name="paymentMethod" style="margin:8px 0 16px;">
+                <option value="UNSPECIFIED">미지정 (연말정산 계산 제외)</option>
+                <option value="CREDIT">신용카드</option>
+                <option value="DEBIT">체크카드</option>
+                <option value="CASH_RECEIPT">현금영수증</option>
+            </select>
+        </label>
         <button type="submit" class="btn">업로드 및 등록</button>
     </form>
 

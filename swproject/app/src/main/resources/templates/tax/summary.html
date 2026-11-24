@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>연말정산 미리보기</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<h1 th:text="${s.year()} + '년 연말정산 미리보기'">연말정산 미리보기</h1>
+<a class="btn" th:href="@{/}">← 홈으로</a>
+
+<!-- 총급여/자녀 수 입력 -->
+<div style="max-width:560px; background:#FFF; border:1px solid #EDE7D8; border-radius:14px; padding:20px; margin-top:16px;">
+    <form th:action="@{/tax/profile}" method="post">
+        <input type="hidden" name="year" th:value="${s.year()}">
+        <label>연 총급여(원)
+            <input type="number" name="salary" th:value="${s.totalSalary()}" min="0" required>
+        </label>
+        <label style="margin-left:12px;">자녀 수
+            <input type="number" name="children" th:value="${s.children()}" min="0" max="10" style="width:60px;">
+        </label>
+        <button type="submit" class="btn">저장</button>
+    </form>
+    <p style="font-size:12px; color:#8A8272; margin-top:8px;">입력값은 이 앱의 DB에만 저장됩니다.</p>
+</div>
+
+<!-- 총급여 입력 전 -->
+<p th:unless="${s.hasProfile()}" style="margin-top:16px;">총급여를 입력하면 계산 결과가 표시됩니다.</p>
+
+<div th:if="${s.hasProfile()}" style="max-width:560px; margin-top:16px;">
+
+    <!-- 문턱(총급여 25%) 진행률 -->
+    <div style="background:#FFF; border:1px solid #EDE7D8; border-radius:14px; padding:20px;">
+        <h3>공제 시작선(최소 사용액)</h3>
+        <p th:text="'기준 금액: ' + ${#numbers.formatInteger(s.now().threshold(),0,'COMMA')} + '원'"></p>
+        <p th:if="${s.now().thresholdReached()}" style="color:#6B9080; font-weight:600;">✅ 이미 넘었어요. 이후 사용분부터 공제됩니다.</p>
+        <p th:unless="${s.now().thresholdReached()}"
+           th:text="'아직 ' + ${#numbers.formatInteger(s.now().remainToThreshold(),0,'COMMA')} + '원 더 써야 공제가 시작돼요.'"></p>
+    </div>
+
+    <!-- 결제수단별 합계 -->
+    <table style="width:100%; margin-top:16px; background:#FFF;">
+        <tr><th>구분</th><th style="text-align:right;">올해 누적</th></tr>
+        <tr><td>신용카드</td><td style="text-align:right;" th:text="${#numbers.formatInteger(s.credit(),0,'COMMA')} + '원'"></td></tr>
+        <tr><td>체크카드</td><td style="text-align:right;" th:text="${#numbers.formatInteger(s.debit(),0,'COMMA')} + '원'"></td></tr>
+        <tr><td>현금영수증</td><td style="text-align:right;" th:text="${#numbers.formatInteger(s.cash(),0,'COMMA')} + '원'"></td></tr>
+        <tr style="color:#8A8272;"><td>결제수단 미지정(계산 제외)</td><td style="text-align:right;" th:text="${#numbers.formatInteger(s.unspecified(),0,'COMMA')} + '원'"></td></tr>
+        <tr style="color:#8A8272;"><td>제외 항목(통신·보험·월세 등)</td><td style="text-align:right;" th:text="${#numbers.formatInteger(s.excluded(),0,'COMMA')} + '원'"></td></tr>
+    </table>
+    <p th:if="${s.unspecified() > 0}" style="font-size:12.5px; color:#B5651D;">
+        결제수단이 지정되지 않은 지출이 있어요. 카드대금 출금 행이 섞여 있으면 이중 집계될 수 있으니,
+        명세서 업로드 시 결제수단을 선택하거나 내역 수정에서 지정해주세요.
+    </p>
+
+    <!-- 공제 결과 -->
+    <div style="background:#FFF; border:1px solid #EDE7D8; border-radius:14px; padding:20px; margin-top:16px;">
+        <h3>예상 소득공제</h3>
+        <p th:text="'현재까지: ' + ${#numbers.formatInteger(s.now().deduction(),0,'COMMA')} + '원 (한도 ' + ${#numbers.formatInteger(s.now().limit(),0,'COMMA')} + '원)'"></p>
+        <p th:text="'연말 예상: ' + ${#numbers.formatInteger(s.projected().deduction(),0,'COMMA')} + '원'"></p>
+        <p th:if="${s.projected().limitReached()}" style="color:#B5651D;">연말 기준 한도에 도달할 것으로 보여요. 추가 카드 사용은 공제 효과가 없을 수 있어요.</p>
+    </div>
+
+    <p style="font-size:12px; color:#8A8272; margin-top:12px;">
+        참고용 추정치입니다. 전통시장·대중교통·도서공연 추가공제, 세율에 따른 실제 환급액은 반영하지 않았습니다.
+        공제율·최소 사용 비율은 확인이 필요한 설정값입니다. 정확한 금액은 홈택스를 확인하세요.
+    </p>
+</div>
+</body>
+</html>
